@@ -9,10 +9,10 @@ import matplotlib.animation as animation
 sym_number = 1
 
 # Pedestrians Description
-num_pedestrians = 5
+num_pedestrians = 20
 init_num_pedestrians = num_pedestrians
-repulsion_radius = 0.4
-repulsion_intensity = 0.2
+repulsion_radius = 0.2
+repulsion_intensity = 2
 noise_intensity = 0.1
 
 # Room Description
@@ -23,7 +23,7 @@ door_position = room_length / 2
 
 
 # Time Discretization
-time_step = 0.05
+time_step = 0.01
 t = 0
 
 # Initialize pedestrian positions and velocities
@@ -54,7 +54,7 @@ while num_pedestrians > 0:
             continue  # Skip this pedestrian
 
         # Compute desired velocity 
-        des_v = 1
+        des_v = 0.5
         des_x,des_y = (-np.array(pedestrian_positions[i]) + np.array((door_position,0)))/distance_to_door 
 
         # Compute heading towards door
@@ -124,7 +124,7 @@ while num_pedestrians > 0:
 
 positions = np.array(positions,dtype = object)
 velocities = np.array(velocities,dtype = object)
-np.save('../data_abm_evac/positions-'+str(sym_number), positions)
-np.save('../data_abm_evac/velocities-'+str(sym_number),velocities)
+np.save('data_abm_evac/positions-'+str(sym_number), positions)
+np.save('data_abm_evac/velocities-'+str(sym_number),velocities)
 ani = animation.ArtistAnimation(fig, ims, interval=50, blit=False)
-ani.save('../gifs_abm_evac/simulation-'+str(sym_number)+'.gif', writer='pillow')
+ani.save('gifs_abm_evac/simulation-'+str(sym_number)+'.gif', writer='pillow')
