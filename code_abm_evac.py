@@ -11,8 +11,8 @@ sym_number = 1
 # Pedestrians Description
 num_pedestrians = 5
 init_num_pedestrians = num_pedestrians
-repulsion_radius = 0.2
-repulsion_intensity = -1
+repulsion_radius = 0.4
+repulsion_intensity = 0.2
 noise_intensity = 0.1
 
 # Room Description
@@ -20,8 +20,7 @@ room_length = 6
 room_height = 4
 door_width = 0.5
 door_position = room_length / 2
-wall_repulsion_radius = 0.2
-wall_repulsion_intensity = 0.5
+
 
 # Time Discretization
 time_step = 0.05
@@ -71,7 +70,7 @@ while num_pedestrians > 0:
                 dx, dy = -np.array(pedestrian_positions[j]) + np.array(pedestrian_positions[i])
                 distance = np.sqrt(dx**2 + dy**2)
                 if distance < repulsion_radius:
-                    repulsion += -repulsion_intensity * (repulsion_radius - distance) / distance * np.array((dx, dy))
+                    repulsion += repulsion_intensity * (repulsion_radius - distance) / distance * np.array((dx, dy))
             
         # Compute repulsion from walls
         wall_repulsion = np.array((0, 0),dtype = float)
