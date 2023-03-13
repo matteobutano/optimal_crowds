@@ -125,7 +125,7 @@ while num_pedestrians > 0:
 
 positions = np.array(positions,dtype = object)
 velocities = np.array(velocities,dtype = object)
-np.save(r'~/Personal/abm/data_abm_evac/positions-'+str(sym_number), positions)
-np.save(r'~/Personal/abm/data_abm_evac/velocities-'+str(sym_number),velocities)
+np.save('../data_abm_evac/positions-'+str(sym_number), positions)
+np.save('../data_abm_evac/velocities-'+str(sym_number),velocities)
 ani = animation.ArtistAnimation(fig, ims, interval=50, blit=False)
-ani.save(r'../gifs_abm_evac/simulation-'+str(sym_number)+'.gif', writer='pillow')
+ani.save('../gifs_abm_evac/simulation-'+str(sym_number)+'.gif', writer='pillow')
