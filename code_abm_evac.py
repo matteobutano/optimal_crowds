@@ -6,21 +6,21 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
 #sym_number = float(sys.argv[1])
-sym_number = 2
+sym_number = 1
 
 # Pedestrians Description
-num_pedestrians = 27
+num_pedestrians = 20
 init_num_pedestrians = num_pedestrians
 repulsion_radius = 0.2
-repulsion_intensity = -2
-noise_intensity = 0.1
+repulsion_intensity = 0.5
+noise_intensity = 0.05
 
 # Room Description
 room_length = 6
 room_height = 4
 door_width = 0.5
 door_position = room_length / 2
-wall_repulsion_radius = 0.15
+wall_repulsion_radius = 0.2
 wall_repulsion_intensity = 0.5
 
 # Time Discretization
@@ -71,7 +71,7 @@ while num_pedestrians > 0:
                 dx, dy = np.array(pedestrian_positions[j]) - np.array(pedestrian_positions[i])
                 distance = np.sqrt(dx**2 + dy**2)
                 if distance < repulsion_radius:
-                    repulsion += repulsion_intensity * (repulsion_radius - distance) / distance * np.array((dx, dy))
+                    repulsion += -repulsion_intensity * (repulsion_radius - distance) / distance * np.array((dx, dy))
             
         # Compute repulsion from walls
         wall_repulsion = np.array((0, 0),dtype = float)
@@ -114,7 +114,7 @@ while num_pedestrians > 0:
     axs.set_xlim([0,room_length])
     axs.set_ylim([0,room_height])
     title = 't = '+str(np.round(t,1))+' s, evac = ' +str(np.round(100.-100*num_pedestrians/init_num_pedestrians,1)) +' %'
-    print(title)
+    print(title + 10*' ',end = '\r')
     title = axs.text(0.5,1.05,title,size=plt.rcParams["axes.titlesize"],ha="center",transform=axs.transAxes)
     ims.append([scat,title]) 
     positions.append(np.array([pedestrian_positions[i] for i in range(num_pedestrians)]))
@@ -123,8 +123,8 @@ while num_pedestrians > 0:
 
 positions = np.array(positions,dtype = object)
 velocities = np.array(velocities,dtype = object)
-np.save(r'abm_data\positions-'+str(sym_number), positions)
-np.save(r'abm_data\velocities-'+str(sym_number),velocities)
-print('Evacuation time: ', t,' s')
+np.save(r'../abm_data/positions-'+str(sym_number), positions)
+np.save(r'../abm_data/velocities-'+str(sym_number),velocities)
+print('Evacuation time: ', t,' s'+10*' ')
 ani = animation.ArtistAnimation(fig, ims, interval=50, blit=False)
-ani.save(r'abm_gifs\simulation-'+str(sym_number)+'.gif', writer='pillow')
+ani.save(r'../abm_gifs/simulation-'+str(sym_number)+'.gif', writer='pillow')
