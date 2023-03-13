@@ -9,11 +9,12 @@ import matplotlib.animation as animation
 sym_number = 1
 
 # Pedestrians Description
-num_pedestrians = 20
+num_pedestrians = 5
 init_num_pedestrians = num_pedestrians
 repulsion_radius = 0.2
-repulsion_intensity = 2
+repulsion_intensity = -2
 noise_intensity = 0.1
+wall_repulsion_intensity = 0.1
 
 # Room Description
 room_length = 6
@@ -23,7 +24,7 @@ door_position = room_length / 2
 
 
 # Time Discretization
-time_step = 0.01
+time_step = 0.05
 t = 0
 
 # Initialize pedestrian positions and velocities
@@ -70,18 +71,18 @@ while num_pedestrians > 0:
                 dx, dy = -np.array(pedestrian_positions[j]) + np.array(pedestrian_positions[i])
                 distance = np.sqrt(dx**2 + dy**2)
                 if distance < repulsion_radius:
-                    repulsion += repulsion_intensity * (repulsion_radius - distance) / distance * np.array((dx, dy))
+                    repulsion += -repulsion_intensity * (repulsion_radius - distance) / distance * np.array((dx, dy))
             
         # Compute repulsion from walls
         wall_repulsion = np.array((0, 0),dtype = float)
         if x < repulsion_radius:
-            wall_repulsion += repulsion_intensity*(repulsion_radius - x) / repulsion_radius * np.array((1, 0))
+            wall_repulsion += wall_repulsion_intensity*(repulsion_radius - x) / repulsion_radius * np.array((1, 0))
         elif x > room_length - repulsion_radius:
-            wall_repulsion += repulsion_intensity*(repulsion_radius - (room_length - x)) / repulsion_radius * np.array((-1, 0))
+            wall_repulsion += wall_repulsion_intensity*(repulsion_radius - (room_length - x)) / repulsion_radius * np.array((-1, 0))
         if y < repulsion_radius:
-            wall_repulsion += repulsion_intensity*(repulsion_radius - y) / repulsion_radius * np.array((0, 1))
+            wall_repulsion += wall_repulsion_intensity*(repulsion_radius - y) / repulsion_radius * np.array((0, 1))
         elif y > room_height - repulsion_radius:
-            wall_repulsion += repulsion_intensity*(repulsion_radius - (room_height - y)) / repulsion_radius * np.array((0, -1))
+            wall_repulsion += wall_repulsion_intensity*(repulsion_radius - (room_height - y)) / repulsion_radius * np.array((0, -1))
 
         # Compute current velocity with random perturbation and repulsion
         vx, vy = pedestrian_velocities[i]
@@ -124,7 +125,7 @@ while num_pedestrians > 0:
 
 positions = np.array(positions,dtype = object)
 velocities = np.array(velocities,dtype = object)
-np.save('data_abm_evac/positions-'+str(sym_number), positions)
-np.save('data_abm_evac/velocities-'+str(sym_number),velocities)
+np.save('../data_abm_evac/positions-'+str(sym_number), positions)
+np.save('../data_abm_evac/velocities-'+str(sym_number),velocities)
 ani = animation.ArtistAnimation(fig, ims, interval=50, blit=False)
-ani.save('gifs_abm_evac/simulation-'+str(sym_number)+'.gif', writer='pillow')
+ani.save('../gifs_abm_evac/simulation-'+str(sym_number)+'.gif', writer='pillow')
