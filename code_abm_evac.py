@@ -14,7 +14,6 @@ init_num_pedestrians = num_pedestrians
 repulsion_radius = 0.2
 repulsion_intensity = -2
 noise_intensity = 0.1
-wall_repulsion_intensity = 0.1
 
 # Room Description
 room_length = 6
@@ -24,7 +23,7 @@ door_position = room_length / 2
 
 
 # Time Discretization
-time_step = 0.01
+time_step = 0.05
 t = 0
 
 # Initialize pedestrian positions and velocities
@@ -76,13 +75,13 @@ while num_pedestrians > 0:
         # Compute repulsion from walls
         wall_repulsion = np.array((0, 0),dtype = float)
         if x < repulsion_radius:
-            wall_repulsion += wall_repulsion_intensity*(repulsion_radius - x) / repulsion_radius * np.array((1, 0))
+            wall_repulsion += -repulsion_intensity*(repulsion_radius - x) / repulsion_radius * np.array((1, 0))
         elif x > room_length - repulsion_radius:
-            wall_repulsion += wall_repulsion_intensity*(repulsion_radius - (room_length - x)) / repulsion_radius * np.array((-1, 0))
-        if y < repulsion_radius:
-            wall_repulsion += wall_repulsion_intensity*(repulsion_radius - y) / repulsion_radius * np.array((0, 1))
+            wall_repulsion += -repulsion_intensity*(repulsion_radius - (room_length - x)) / repulsion_radius * np.array((-1, 0))
+        if y < repulsion_radius and (x > door_position + door_width/2 or x < door_position - door_width/2) :
+            wall_repulsion += -repulsion_intensity*(repulsion_radius - y) / repulsion_radius * np.array((0, 1))
         elif y > room_height - repulsion_radius:
-            wall_repulsion += wall_repulsion_intensity*(repulsion_radius - (room_height - y)) / repulsion_radius * np.array((0, -1))
+            wall_repulsion += -repulsion_intensity*(repulsion_radius - (room_height - y)) / repulsion_radius * np.array((0, -1))
 
         # Compute current velocity with random perturbation and repulsion
         vx, vy = pedestrian_velocities[i]
@@ -104,7 +103,7 @@ while num_pedestrians > 0:
     for out in completed_pedestrians:
         pedestrian_positions.pop(out)
         pedestrian_velocities.pop(out)
-        num_pedestrians -= 1   
+        num_pedestrians -= 1 
         
     scat_x = [pedestrian_positions[i][0] for i in range(num_pedestrians)]
     scat_y = [pedestrian_positions[i][1] for i in range(num_pedestrians)]
