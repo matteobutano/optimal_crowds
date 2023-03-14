@@ -24,7 +24,7 @@ door_position = room_length / 2
 
 
 # Time Discretization
-time_step = 0.05
+time_step = 0.01
 t = 0
 
 # Initialize pedestrian positions and velocities
@@ -34,7 +34,7 @@ positions = []
 velocities = []
 for i in range(num_pedestrians):
     x = random.uniform(0, room_length)
-    y = random.uniform(room_height/2, room_height)
+    y = random.uniform(0, room_height)
     pedestrian_positions.append((x, y))
     pedestrian_velocities.append((0, 0))
 
@@ -125,7 +125,7 @@ while num_pedestrians > 0:
 
 positions = np.array(positions,dtype = object)
 velocities = np.array(velocities,dtype = object)
-np.save('../data_abm_evac/positions-'+str(sym_number), positions)
-np.save('../data_abm_evac/velocities-'+str(sym_number),velocities)
+np.save('data_abm_evac/positions-'+str(sym_number), positions)
+np.save('data_abm_evac/velocities-'+str(sym_number),velocities)
 ani = animation.ArtistAnimation(fig, ims, interval=50, blit=False)
-ani.save('../gifs_abm_evac/simulation-'+str(sym_number)+'.gif', writer='pillow')
+ani.save('gifs_abm_evac/simulation-'+str(sym_number)+'.gif', writer='pillow')
