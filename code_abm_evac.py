@@ -6,14 +6,14 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
 #sym_number = float(sys.argv[1])
-sym_number = 1
+sym_number = 3
 
 # Pedestrians Description
-num_pedestrians = 500
+num_pedestrians = 10
 init_num_pedestrians = num_pedestrians
 repulsion_radius = 0.2
 repulsion_intensity = -2
-noise_intensity = 0.1
+noise_intensity = 0.05
 
 # Room Description
 room_length = 6
@@ -23,7 +23,7 @@ door_position = room_length / 2
 
 
 # Time Discretization
-time_step = 0.01
+time_step = 0.05
 t = 0
 
 # Initialize pedestrian positions and velocities
