@@ -9,7 +9,7 @@ import matplotlib.animation as animation
 sym_number = 1
 
 # Pedestrians Description
-num_pedestrians = 5
+num_pedestrians = 500
 init_num_pedestrians = num_pedestrians
 repulsion_radius = 0.2
 repulsion_intensity = -2
@@ -23,7 +23,7 @@ door_position = room_length / 2
 
 
 # Time Discretization
-time_step = 0.05
+time_step = 0.01
 t = 0
 
 # Initialize pedestrian positions and velocities
@@ -32,8 +32,8 @@ pedestrian_velocities = []
 positions = []
 velocities = []
 for i in range(num_pedestrians):
-    x = random.uniform(0, room_length)
-    y = random.uniform(0, room_height)
+    x = random.uniform(repulsion_radius, room_length-repulsion_radius)
+    y = random.uniform(repulsion_radius, room_height-repulsion_radius)
     pedestrian_positions.append((x, y))
     pedestrian_velocities.append((0, 0))
 
