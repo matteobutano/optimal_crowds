@@ -38,7 +38,7 @@ for i in range(num_pedestrians):
     pedestrian_velocities.append((0, 0))
 
 # Graphics 
-fig,axs = plt.subplots(figsize=(8,6))
+fig,axs = plt.subplots(figsize=(6,4))
 ims = []
 
 while num_pedestrians > 0:
@@ -56,12 +56,6 @@ while num_pedestrians > 0:
         # Compute desired velocity 
         des_v = 0.5
         des_x,des_y = (-np.array(pedestrian_positions[i]) + np.array((door_position,0)))/distance_to_door 
-
-        # Compute heading towards door
-        if x < door_position:
-            heading = 1
-        else:
-            heading = -1
 
         # Compute repulsion from nearby pedestrians
         repulsion = np.array((0, 0),dtype = float)
@@ -124,7 +118,7 @@ while num_pedestrians > 0:
 
 positions = np.array(positions,dtype = object)
 velocities = np.array(velocities,dtype = object)
-np.save('data_abm_evac/positions-'+str(sym_number), positions)
-np.save('data_abm_evac/velocities-'+str(sym_number),velocities)
-ani = animation.ArtistAnimation(fig, ims, interval=50, blit=False)
-ani.save('gifs_abm_evac/simulation-'+str(sym_number)+'.gif', writer='pillow')
+np.save('../data_abm_evac/positions-'+str(sym_number), positions)
+np.save('../data_abm_evac/velocities-'+str(sym_number),velocities)
+ani = animation.ArtistAnimation(fig, ims, interval=50, blit=True)
+ani.save('../gifs_abm_evac/simulation-'+str(sym_number)+'.gif', writer='pillow')
