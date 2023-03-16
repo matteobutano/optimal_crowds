@@ -37,13 +37,15 @@ for i in range(num_pedestrians):
     pedestrian_positions.append((x, y))
     pedestrian_velocities.append((0, 0))
 
+positions.append(np.array([pedestrian_positions[i] for i in range(num_pedestrians)]))
+
 # Graphics 
 fig,axs = plt.subplots(figsize=(6,4))
 ims = []
 
 while num_pedestrians > 0:
     completed_pedestrians = []
-    for i in range(num_pedestrians):
+    for i in np.random.choice(np.arange(num_pedestrians),num_pedestrians,replace=False):
         # Compute distance to door
         x, y = pedestrian_positions[i]
         distance_to_door = np.sqrt((x-door_position)**2 + y**2)
