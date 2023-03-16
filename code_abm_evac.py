@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
 #sym_number = float(sys.argv[1])
-sym_number = 3
+sym_number = 1
 
 # Pedestrians Description
 num_pedestrians = 10
@@ -118,7 +118,8 @@ while num_pedestrians > 0:
 
 positions = np.array(positions,dtype = object)
 velocities = np.array(velocities,dtype = object)
-np.save('../data_abm_evac/positions-'+str(sym_number), positions)
-np.save('../data_abm_evac/velocities-'+str(sym_number),velocities)
+name = 'ped='+str(init_num_pedestrians)+'_noise='+str(noise_intensity)+'_tstep'+str(time_step)+'_'+str(int(sys_number))
+np.save('data_abm_evac/pos_'+name, positions)
+np.save('data_abm_evac/vel_'+name,velocities)
 ani = animation.ArtistAnimation(fig, ims, interval=50, blit=True)
-ani.save('../gifs_abm_evac/simulation-'+str(sym_number)+'.gif', writer='pillow')
+ani.save('../gifs_abm_evac/sim_'+name+'.gif', writer='pillow')
