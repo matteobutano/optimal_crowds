@@ -122,7 +122,7 @@ class simulation:
             if draw:
                 self.draw(mode)
                 plt.show()
-                
+        print('Evacuation complete!')        
                 
     def gaussian_density(self,sigma,Nx,Ny):
         
