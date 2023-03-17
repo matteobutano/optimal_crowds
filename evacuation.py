@@ -6,7 +6,7 @@ import json
 
 class simulation:
     def __init__(self,N,dt):
-        with open('config.json') as f:
+        with open('abm_evacuation/config.json') as f:
             var = json.loads(f.read())
         self.x_door = var['x_door']
         self.y_door = var['y_door']
