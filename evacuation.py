@@ -90,20 +90,16 @@ class simulation:
         # Avance time and simu step
         self.time+=dt
         self.simu_step+=1
-        print('t = {:.2f}s exit = {:.2f}'.format(self.time,float(100 - self.inside/self.N*100)),end='\r')
+        print('t = {:.2f}s exit = {:.2f}'.format(self.time,100. - float(self.inside)/float(self.N)*100.)+'%'+10*'',end='\r')
                 
     def evac_times(self,draw = False):
         if self.inside > 0:
             raise ValueError('There are still people inside!')
         times = np.empty(self.N,dtype = float)
-        xs = np.empty(self.N)
-        ys = np.empty(self.N)
         for i, agent in enumerate(self.agents):
-            if draw:
-                xs[i] = agent.initial_position[0]
-                ys[i] = agent.initial_position[1]
             times[i] = agent.time
         if draw: 
+            xs,ys = self.initial_positions()
             plt.scatter(xs, ys, c=times)
             plt.xlim(0,self.room_length)
             plt.ylim(0,self.room_height)
@@ -113,7 +109,14 @@ class simulation:
         else:
             return times
             
-            
+    def initial_positions(self):
+        xs = np.empty(self.N,dtype = float)
+        ys = np.empty(self.N,dtype = float)
+        for i, agent in enumerate(self.agents):
+            xs[i] = agent.initial_position[0]
+            ys[i] = agent.initial_position[1]
+        return xs,ys
+
         
     
     def run(self,draw = False,mode = 'scatter'):
@@ -122,7 +125,7 @@ class simulation:
             if draw:
                 self.draw(mode)
                 plt.show()
-        print('Evacuation complete!')        
+        print('Evacuation complete!' + 10*' ')        
                 
     def gaussian_density(self,sigma,Nx,Ny):
         
