@@ -1,0 +1,12 @@
+{
+"repulsion_radius": 0.2,
+"repulsion_intensity": -2,
+"noise_intensity": 0.1,	
+"des_v": 1,
+"relaxation": 0.5,
+"room_length": 6,
+"room_height": 4,
+"door_width": 0.5,
+"x_door": 3,
+"y_door": 0
+}
