@@ -90,7 +90,7 @@ class simulation:
         # Avance time and simu step
         self.time+=dt
         self.simu_step+=1
-        print('t = {:.2f}s exit = {:.2f}'.format(self.time,float(100 - self.inside/self.N*100)))
+        print('t = {:.2f}s exit = {:.2f}'.format(self.time,float(100 - self.inside/self.N*100)),end='\r')
                 
     def evac_times(self,draw = False):
         if self.inside > 0:
