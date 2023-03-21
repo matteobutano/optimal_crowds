@@ -13,6 +13,9 @@ class simulation:
         self.door_width = var['door_width'] 
         self.room_length = var['room_length']
         self.room_height = var['room_height']
+        self.Nx = 150
+        self.Ny = 100
+        self.sigma = 0.25
         self.time = 0.
         self.simu_step = 0
         self.dt = dt
@@ -43,7 +46,7 @@ class simulation:
             title = 't = '+ print_time +' s, evac = '+print_fraction+' %'
             plt.title(title)
         if mode == 'density':
-            X,Y,d = self.gaussian_density(0.5, 150, 100)
+            X,Y,d = self.gaussian_density(self.sigma, self.Nx, self.Ny)
             plt.pcolor(X,Y,d) 
             plt.plot([self.x_door-self.door_width/2, self.x_door + self.door_width/2],[0, 0], 'r-', linewidth=2)
             plt.xlim([0,self.room_length])
@@ -55,7 +58,7 @@ class simulation:
             plt.colorbar()
             
     
-    def step(self,dt):
+    def step(self,dt,verbose =  False):
         for i in  np.random.choice(np.arange(self.N),self.N,replace=False):
             # Summon agent
             agent = self.agents[i]
@@ -102,7 +105,8 @@ class simulation:
         # Avance time and simu step
         self.time+=dt
         self.simu_step+=1
-        print('t = {:.2f}s exit = {:.2f}'.format(self.time,100. - float(self.inside)/float(self.N)*100.)+'%'+10*'',end='\r')
+        if verbose:
+            print('t = {:.2f}s exit = {:.2f}'.format(self.time,100. - float(self.inside)/float(self.N)*100.)+'%',end='\n')
                 
     def evac_times(self,draw = False):
         if self.inside > 0:
@@ -131,13 +135,21 @@ class simulation:
 
         
     
-    def run(self,draw = False,mode = 'scatter'):
+    def run(self,save = False, where_save = '', verbose = False, draw = False,mode = 'scatter'):
+        if save:
+            densities = []
         while self.inside > 0:    
-            self.step(self.dt)
+            self.step(self.dt,verbose = verbose)
             if draw:
                 self.draw(mode)
                 plt.show()
-        print('Evacuation complete!' + 10*' ')        
+            if save:
+                densities.append(self.gaussian_density(self.sigma, self.Nx, self.Ny)[2])
+        print('Evacuation complete!')
+        if save:
+            densities = np.array(densities).reshape((self.simu_step,self.Nx*self.Ny))
+            np.savetxt(where_save+'m_T='+str(self.time)+'_dt='+str(self.dt)+'_N='+str(self.N)+'.txt', densities)
+            print('Densities saved!')
                 
     def gaussian_density(self,sigma,Nx,Ny):
         
@@ -150,16 +162,17 @@ class simulation:
         X = X[:-1,:-1] + dx/2
         Y = np.flip(Y[:-1,:-1] + dy/2,axis = 0)
         d = np.zeros((Ny,Nx))
-        
+        count = 0
         for agent in self.agents:
             if agent.status:
+                count+=1
                 x_agent = agent.position()[0]
                 y_agent = agent.position()[1]
                 c_x = X - x_agent
                 c_y = Y - y_agent
                 C = np.sqrt(4*np.pi**2*sigma**2)
                 d += np.exp(-(c_x**2 + c_y**2)/(2*sigma**2))/C
- 
+        
         return X,Y,d
         
 # Create class to describe pedestrian 
