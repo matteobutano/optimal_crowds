@@ -42,6 +42,18 @@ class simulation:
             print_fraction = '{:.2f}'.format(100. - 100.*self.inside/self.N)
             title = 't = '+ print_time +' s, evac = '+print_fraction+' %'
             plt.title(title)
+        if mode == 'density':
+            X,Y,d = self.gaussian_density(0.5, 150, 100)
+            plt.pcolor(X,Y,d) 
+            plt.plot([self.x_door-self.door_width/2, self.x_door + self.door_width/2],[0, 0], 'r-', linewidth=2)
+            plt.xlim([0,self.room_length])
+            plt.ylim([0,self.room_height])
+            print_time = '{:.2f}'.format(self.time)
+            print_fraction = '{:.2f}'.format(100. - 100.*self.inside/self.N)
+            title = 't = '+ print_time +' s, evac = '+print_fraction+' %'
+            plt.title(title)
+            plt.colorbar()
+            
     
     def step(self,dt):
         for i in  np.random.choice(np.arange(self.N),self.N,replace=False):
@@ -140,14 +152,15 @@ class simulation:
         d = np.zeros((Ny,Nx))
         
         for agent in self.agents:
-            x_agent = agent.position()[0]
-            y_agent = agent.position()[1]
-            c_x = X - x_agent
-            c_y = Y - y_agent
-            C = np.sqrt(4*np.pi**2*sigma**2)
-            d += np.exp(-(c_x**2 + c_y**2)/(2*sigma**2))/C
+            if agent.status:
+                x_agent = agent.position()[0]
+                y_agent = agent.position()[1]
+                c_x = X - x_agent
+                c_y = Y - y_agent
+                C = np.sqrt(4*np.pi**2*sigma**2)
+                d += np.exp(-(c_x**2 + c_y**2)/(2*sigma**2))/C
  
-        return density
+        return X,Y,d
         
 # Create class to describe pedestrian 
   
