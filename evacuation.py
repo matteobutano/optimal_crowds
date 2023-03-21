@@ -169,7 +169,7 @@ class simulation:
         print('Evacuation complete!')
         if save:
             densities = np.array(densities).reshape((self.simu_step,self.Nx*self.Ny))
-            np.savetxt(where_save+'m_T='+str(self.time)+'_dt='+str(self.dt)+'_N='+str(self.N)+'.txt', densities)
+            np.savetxt(where_save+'m_dt='+str(self.dt)+'_N='+str(self.N)+'.txt', densities)
             print('Densities saved!')
                 
     def gaussian_density(self,sigma,Nx,Ny):

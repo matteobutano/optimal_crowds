@@ -13,6 +13,6 @@
 "room_length": 3,
 "room_height": 3,
 "Nx": 150,
-"Ny": 100,
+"Ny": 150,
 "sigma": 0.25
 }
