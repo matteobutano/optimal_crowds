@@ -8,29 +8,44 @@ class simulation:
     def __init__(self,N,dt):
         with open('abm_evacuation/config.json') as f:
             var = json.loads(f.read())
-        self.x_door = var['x_door']
-        self.y_door = var['y_door']
-        self.door_width = var['door_width'] 
+        
+        # Read doors
+        self.doors = np.empty((len(var['doors']),4))
+        for i,door in enumerate(var['doors']):
+            self.doors[i,:] = np.array(var['doors'][str(door)])
+        
+        # Read room 
         self.room_length = var['room_length']
         self.room_height = var['room_height']
-        self.Nx = 150
-        self.Ny = 100
-        self.sigma = 0.25
+        
+        # Read params for density plot
+        self.Nx = var['Nx']
+        self.Ny = var['Ny']
+        self.sigma = var['sigma']
+        
+        # Init time variables 
         self.time = 0.
         self.simu_step = 0
         self.dt = dt
+        
+        # Init population
         self.N = N
         self.inside = N
+         
+        # Init pedestrians features
         self.relaxation = var['relaxation']
         self.rep_radius = var['repulsion_radius']
         self.rep_int = var['repulsion_intensity']
         self.noise_intensity = var['noise_intensity']
         self.des_v = var['des_v']
+        
+        # Create crowd
         self.agents = np.empty(N,dtype=object)
         xs = np.random.uniform(self.rep_radius, self.room_length-self.rep_radius,N)
         ys = np.random.uniform(self.rep_radius, self.room_height-self.rep_radius,N)
         for i in range(N):
-            self.agents[i] = ped(xs[i], ys[i], 0, 0, self.x_door, self.y_door, self.door_width, self.room_length, self.room_height)
+            self.agents[i] = ped(xs[i], ys[i], 0, 0, self.doors, self.room_length, self.room_height)
+            self.agents[i].choose_target()
         print('Simulation room created!')
         
     def draw(self,mode):
@@ -38,7 +53,8 @@ class simulation:
             scat_x = [self.agents[i].position()[0] for i in range(self.N) if self.agents[i].status]
             scat_y = [self.agents[i].position()[1] for i in range(self.N) if self.agents[i].status]
             plt.scatter(scat_x,scat_y,color = 'blue')
-            plt.plot([self.x_door-self.door_width/2, self.x_door + self.door_width/2],[0, 0], 'r-', linewidth=2)
+            for door in self.doors:
+                plt.plot([door[0]-door[2]/2, door[0] + door[2]/2],[door[1] - door[3]/2, door[1] + door[3]/2], 'r-', linewidth=4)
             plt.xlim([0,self.room_length])
             plt.ylim([0,self.room_height])
             print_time = '{:.2f}'.format(self.time)
@@ -48,7 +64,8 @@ class simulation:
         if mode == 'density':
             X,Y,d = self.gaussian_density(self.sigma, self.Nx, self.Ny)
             plt.pcolor(X,Y,d) 
-            plt.plot([self.x_door-self.door_width/2, self.x_door + self.door_width/2],[0, 0], 'r-', linewidth=2)
+            for door in self.doors:
+                plt.plot([door[0]-door[2]/2, door[0] + door[2]/2],[door[1] - door[3]/2, door[1] + door[3]/2], 'r-', linewidth=4)
             plt.xlim([0,self.room_length])
             plt.ylim([0,self.room_height])
             print_time = '{:.2f}'.format(self.time)
@@ -62,8 +79,8 @@ class simulation:
         for i in  np.random.choice(np.arange(self.N),self.N,replace=False):
             # Summon agent
             agent = self.agents[i]
-            
-            # Check if agent has reached the door
+    
+            # Check if agent has reached the a door
             if agent.status:
             
                 # Compute desired velocity 
@@ -98,13 +115,17 @@ class simulation:
                 
                 # Check if agent has left the room
                 agent.check_status()
-                
                 if agent.status == False:
                     self.inside +=-1
+                    
+                # Choose new target
+                
+                agent.choose_target()
         
         # Avance time and simu step
         self.time+=dt
         self.simu_step+=1
+        
         if verbose:
             print('t = {:.2f}s exit = {:.2f}'.format(self.time,100. - float(self.inside)/float(self.N)*100.)+'%',end='\n')
                 
@@ -178,25 +199,35 @@ class simulation:
 # Create class to describe pedestrian 
   
 class ped:   
-    def __init__(self,x,y,vx,vy,x_door,y_door,door_width,room_length,room_height):
+    def __init__(self,x,y,vx,vy,doors,room_length,room_height):
         self.initial_position = np.array((x,y),dtype = float)
         self.initial_velocity = np.array((vx,vy),dtype = float)
         self.status = True
+        self.target = 0
         self.time = 0
-        self.x_door = x_door
-        self.y_door = y_door
-        self.door_width = door_width 
+        self.doors = doors
         self.room_length = room_length
         self.room_height = room_height
         self.traj = []
         self.vels = []
         self.traj.append(self.initial_position)
         self.vels.append(self.initial_velocity)
-   
+    
+    def choose_target(self):
+        x,y = self.position()
+        distances = np.sqrt((x-self.doors[:,0])**2 + (y-self.doors[:,1])**2)
+        self.target = np.argmin(distances)
+        
+    def look_target(self):
+        x_door,y_door = self.doors[self.target,:2]
+        door_width_x,door_width_y = self.doors[self.target,2:]
+        return (x_door,y_door, door_width_x,door_width_y)
+        
+        
     def check_status(self):
-        x = self.position()[0]
-        y = self.position()[1]
-        if ((y < 0.1) and (self.x_door - self.door_width/2 < x < self.x_door + self.door_width/2)):
+        x,y = self.position()
+        door = self.look_target()
+        if abs(x-door[0]) < door[2]*0.5 + door[3]*0.2 and abs(y-door[1]) < door[3]*0.5 + door[2]*0.2 :
             self.status = False
               
     def position(self):
@@ -215,11 +246,12 @@ class ped:
             raise ValueError('This pedestrian has not exited the room yet!')
         return self.time
     
-    def distance(self):
-        return np.sqrt((self.position()[0]-self.x_door)**2 + (self.position()[1]-self.y_door**2))
+    def distance(self,x,y):
+        return np.sqrt((self.position()[0]-x)**2 + (self.position()[1]-y)**2)
     
     def desired_velocity(self,des_v):
-        return des_v*((-self.position() + np.array((self.x_door,self.y_door),dtype = float))/self.distance())
+        x_door,y_door = self.doors[self.target,:2]
+        return des_v*((-self.position() + np.array((x_door,y_door),dtype = float))/self.distance(x_door,y_door))
     
     def compute_repulsion(self,pos,repulsion_radius, repulsion_intensity):
         rep_v = -self.position() + pos
@@ -230,18 +262,30 @@ class ped:
         return rep
         
     def wall_repulsion(self,repulsion_radius, repulsion_intensity):
+        
         wall_repulsion = np.array((0, 0),dtype = float)
-        x = self.position()[0]
-        y = self.position()[1]
-        if x < repulsion_radius:
+        
+        x,y = self.position()
+        
+        door = self.look_target()
+
+        if x < repulsion_radius and abs(y-door[1]) > door[3]/2:
             wall_repulsion += -repulsion_intensity*(repulsion_radius - x) / repulsion_radius * np.array((1, 0))
-        elif x > self.room_length - repulsion_radius:
+            
+        elif x > self.room_length - repulsion_radius and abs(y-door[1]) > door[3]/2:
             wall_repulsion += -repulsion_intensity*(repulsion_radius - (self.room_length - x)) / repulsion_radius * np.array((-1, 0))
-        if y < repulsion_radius and (x > self.x_door + self.door_width/2 or x < self.x_door - self.door_width/2) :
+            
+        if y < repulsion_radius and abs(x-door[0]) > door[2]/2:
             wall_repulsion += -repulsion_intensity*(repulsion_radius - y) / repulsion_radius * np.array((0, 1))
-        elif y > self.room_height - repulsion_radius:
+            
+        elif y > self.room_height - repulsion_radius and abs(x-door[0]) > door[2]/2:
             wall_repulsion += -repulsion_intensity*(repulsion_radius - (self.room_height - y)) / repulsion_radius * np.array((0, -1))
+            
         return wall_repulsion
             
-    
+    def draw_trajectory(self):
+        traj = np.array(self.traj)
+        plt.plot(traj[:,0],traj[:,1])
+        plt.xlim([0,self.room_length])
+        plt.ylim([0,self.room_height])
         

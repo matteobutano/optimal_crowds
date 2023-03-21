@@ -3,10 +3,14 @@
 "repulsion_intensity": -2,
 "noise_intensity": 0.1,	
 "des_v": 1,
+"doors":{
+	"door_1": [2,0,0.5,0],
+	"door_2": [0,2,0,0.5]
+       },
 "relaxation": 0.5,
-"room_length": 6,
-"room_height": 4,
-"door_width": 0.5,
-"x_door": 3,
-"y_door": 0
+"room_length": 3,
+"room_height": 3,
+"Nx": 150,
+"Ny": 100,
+"sigma": 0.25
 }
