@@ -174,8 +174,8 @@ class simulation:
                 
     def gaussian_density(self,sigma,Nx,Ny):
         
-        dx = self.room_length/(Nx-1)
-        dy = self.room_height/(Ny-1)
+        dx = self.room_length/(Nx)
+        dy = self.room_height/(Ny)
 
         X,Y = np.meshgrid(np.linspace(0,self.room_length,Nx+1), 
                           np.linspace(0,self.room_height,Ny+1))
