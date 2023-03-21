@@ -129,12 +129,6 @@ class simulation:
                 
     def gaussian_density(self,sigma,Nx,Ny):
         
-        def gaussian(x,y,x_agent,y_agent,sigma):
-            c_x = x - x_agent
-            c_y = y - y_agent
-            C = np.sqrt(4*np.pi**2*sigma**2)
-            return np.exp(-(c_x**2 + c_y**2)/(2*sigma**2))/C
-        
         dx = self.room_length/(Nx-1)
         dy = self.room_height/(Ny-1)
 
@@ -143,12 +137,16 @@ class simulation:
         
         X = X[:-1,:-1] + dx/2
         Y = np.flip(Y[:-1,:-1] + dy/2,axis = 0)
-        
-        density = np.zeros((Ny,Nx))
+        d = np.zeros((Ny,Nx))
         
         for agent in self.agents:
-            density += gaussian(X, Y, agent[0], agent[1], 0.1)
-        
+            x_agent = agent.position()[0]
+            y_agent = agent.position()[1]
+            c_x = X - x_agent
+            c_y = Y - y_agent
+            C = np.sqrt(4*np.pi**2*sigma**2)
+            d += np.exp(-(c_x**2 + c_y**2)/(2*sigma**2))/C
+ 
         return density
         
 # Create class to describe pedestrian 
