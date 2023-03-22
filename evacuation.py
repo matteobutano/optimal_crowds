@@ -5,7 +5,7 @@ import json
 # Create class to describe simulation
 
 class simulation:
-    def __init__(self,N,dt):
+    def __init__(self):
         with open('abm_evacuation/config.json') as f:
             var = json.loads(f.read())
         
@@ -26,11 +26,11 @@ class simulation:
         # Init time variables 
         self.time = 0.
         self.simu_step = 0
-        self.dt = dt
+        self.dt = var['dt']
         
         # Init population
-        self.N = N
-        self.inside = N
+        self.N = var['N']
+        self.inside = var['N']
          
         # Init pedestrians features
         self.relaxation = var['relaxation']
@@ -40,10 +40,10 @@ class simulation:
         self.des_v = var['des_v']
         
         # Create crowd
-        self.agents = np.empty(N,dtype=object)
-        xs = np.random.uniform(self.rep_radius, self.room_length-self.rep_radius,N)
-        ys = np.random.uniform(self.rep_radius, self.room_height-self.rep_radius,N)
-        for i in range(N):
+        self.agents = np.empty(self.N,dtype=object)
+        xs = np.random.uniform(self.rep_radius, self.room_length-self.rep_radius,self.N)
+        ys = np.random.uniform(self.rep_radius, self.room_height-self.rep_radius,self.N)
+        for i in range(self.N):
             self.agents[i] = ped(xs[i], ys[i], 0, 0, self.doors, self.room_length, self.room_height)
             self.agents[i].choose_target()
         print('Simulation room created!')
