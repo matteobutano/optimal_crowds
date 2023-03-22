@@ -127,7 +127,7 @@ class simulation:
         self.simu_step+=1
         
         if verbose:
-            print('t = {:.2f}s exit = {:.2f}'.format(self.time,100. - float(self.inside)/float(self.N)*100.)+'%',end='\n')
+            print('t = {:.2f}s exit = {}/{}'.format(self.time,self.N - self.inside,self.N),end='\n')
                 
     def evac_times(self,draw = False):
         if self.inside > 0:
@@ -192,8 +192,7 @@ class simulation:
                 c_x = X - x_agent
                 c_y = Y - y_agent
                 C = np.sqrt(4*np.pi**2*sigma**2)
-                d += np.exp(-(c_x**2 + c_y**2)/(2*sigma**2))/C
-        
+                d += np.exp(-(c_x**2 + c_y**2)/(2*sigma**2))/C 
         return X,Y,d
         
 # Create class to describe pedestrian 
