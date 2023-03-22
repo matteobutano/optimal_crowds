@@ -1,6 +1,6 @@
 {
-"N": 100,
-"dt": 0.05,
+"N": 10,
+"dt": 0.01,
 "repulsion_radius": 0.2,
 "repulsion_intensity": -1,
 "noise_intensity": 0.1,	
@@ -13,5 +13,5 @@
 "room_height": 3,
 "Nx": 150,
 "Ny": 150,
-"sigma": 0.25
+"sigma": 0.05
 }
