@@ -41,8 +41,8 @@ class simulation:
         
         # Create crowd
         self.agents = np.empty(self.N,dtype=object)
-        xs = np.random.uniform(self.rep_radius, self.room_length-self.rep_radius,self.N)
-        ys = np.random.uniform(self.rep_radius, self.room_height-self.rep_radius,self.N)
+        xs = np.random.uniform(self.room_length/2, self.room_length-self.rep_radius,self.N)
+        ys = np.random.uniform(self.rep_radius, self.room_height/2,self.N)
         for i in range(self.N):
             self.agents[i] = ped(xs[i], ys[i], 0, 0, self.doors, self.room_length, self.room_height)
             self.agents[i].choose_target()
@@ -53,26 +53,24 @@ class simulation:
             scat_x = [self.agents[i].position()[0] for i in range(self.N) if self.agents[i].status]
             scat_y = [self.agents[i].position()[1] for i in range(self.N) if self.agents[i].status]
             plt.scatter(scat_x,scat_y,color = 'blue')
-            for door in self.doors:
-                plt.plot([door[0]-door[2]/2, door[0] + door[2]/2],[door[1] - door[3]/2, door[1] + door[3]/2], 'r-', linewidth=4)
-            plt.xlim([0,self.room_length])
-            plt.ylim([0,self.room_height])
-            print_time = '{:.2f}'.format(self.time)
-            print_fraction = '{:.2f}'.format(100. - 100.*self.inside/self.N)
-            title = 't = '+ print_time +' s, evac = '+print_fraction+' %'
-            plt.title(title)
+        
+        if mode == 'arrows':
+            scat_x = [self.agents[i].position()[0] for i in range(self.N) if self.agents[i].status]
+            scat_y = [self.agents[i].position()[1] for i in range(self.N) if self.agents[i].status]
+            scat_vx = [self.agents[i].velocity()[0] for i in range(self.N) if self.agents[i].status]
+            scat_vy = [self.agents[i].velocity()[1] for i in range(self.N) if self.agents[i].status]
+            plt.quiver(scat_x,scat_y,scat_vx, scat_vy,color = 'blue')
+        
         if mode == 'density':
             X,Y,d = self.gaussian_density(self.sigma, self.Nx, self.Ny)
-            plt.pcolor(X,Y,d) 
-            for door in self.doors:
-                plt.plot([door[0]-door[2]/2, door[0] + door[2]/2],[door[1] - door[3]/2, door[1] + door[3]/2], 'r-', linewidth=4)
-            plt.xlim([0,self.room_length])
-            plt.ylim([0,self.room_height])
-            print_time = '{:.2f}'.format(self.time)
-            print_fraction = '{:.2f}'.format(100. - 100.*self.inside/self.N)
-            title = 't = '+ print_time +' s, evac = '+print_fraction+' %'
-            plt.title(title)
-            plt.colorbar()
+            plt.pcolor(X,Y,d)
+            
+        for door in self.doors:
+            plt.plot([door[0]-door[2]/2, door[0] + door[2]/2],[door[1] - door[3]/2, door[1] + door[3]/2], 'r-', linewidth=4)
+        plt.xlim([0,self.room_length])
+        plt.ylim([0,self.room_height])
+        title = 't = {:.2f}s exit = {}/{}'.format(self.time,self.N - self.inside,self.N)
+        plt.title(title)
             
     
     def step(self,dt,verbose =  False):
