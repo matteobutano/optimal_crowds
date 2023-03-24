@@ -1,6 +1,6 @@
 {
 "N": 50,
-"dt": 0.01,
+"dt": 0.05,
 "repulsion_radius": 0.2,
 "repulsion_intensity": -1,
 "noise_intensity": 0.1,	

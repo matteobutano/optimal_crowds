@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import json
+import os
 
 # Create class to describe simulation
 
@@ -286,3 +287,58 @@ class ped:
         plt.xlim([0,self.room_length])
         plt.ylim([0,self.room_height])
         
+
+class read_past:
+    def __init__(self):
+        with open('abm_evacuation/config.json') as f:
+            var = json.loads(f.read())
+            
+        # Read room 
+        self.room_length = var['room_length']
+        self.room_height = var['room_height']
+        
+        # Read params for density plot
+        self.Nx = var['Nx']
+        self.Ny = var['Ny']
+        self.sigma = var['sigma']
+        
+        # Init time variables 
+        self.time = 0.
+        self.simu_step = 0
+        self.dt = var['dt']
+        
+        self.path_to_past = 'data_abm_evac/past/'
+       
+        if len(os.listdir(self.path_to_past)) == 0 :
+            raise ValueError('There is no past!')
+        else:
+            self.data= np.genfromtxt(self.path_to_past + 'vels.txt',delimiter=',') 
+        
+        self.past_ax = np.empty((self.data.shape[0],self.Ny-2,self.Nx-2))
+        self.past_ay = np.empty((self.data.shape[0],self.Ny-2,self.Nx-2))
+        
+        for t in np.arange(self.data.shape[0]-2 ,-1,-1):
+            ax = np.reshape(self.data[t,:int(self.data.shape[1]/2)],(self.Ny-2,self.Nx-2))
+            ay = np.reshape(self.data[t,int(self.data.shape[1]/2):],(self.Ny-2,self.Nx-2))
+            self.past_ax[(self.data.shape[0]-2)-t] = ax
+            self.past_ay[(self.data.shape[0]-2)-t] = ay
+            
+        # Built past coordinates
+        
+        dx = self.room_length/self.Nx
+        dy = self.room_height/self.Ny
+
+        self.past_X, self.past_Y = np.meshgrid(np.linspace(3*dx/2,self.room_length-3*dx/2,self.Nx-2),np.linspace(3*dy/2,self.room_height-3*dy/2,self.Ny-2))
+        
+        print('The past has been read!')
+    
+    def draw(self):
+        for t in range(self.data.shape[0]-1):
+            plt.quiver(self.past_X,self.past_Y,self.past_ax[t],self.past_ay[t])
+            plt.show()
+            
+    
+            
+        
+            
+            
