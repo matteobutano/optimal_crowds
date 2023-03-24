@@ -5,8 +5,8 @@ import os
 
 # Create class to describe simulation
 
-class simulation:
-    def __init__(self):
+class simulation():
+    def __init__(self,with_past = False):
         with open('abm_evacuation/config.json') as f:
             var = json.loads(f.read())
         
@@ -49,6 +49,12 @@ class simulation:
             self.agents[i].choose_target()
         print('Simulation room created!')
         
+        self.smart = with_past
+        
+        if self.smart :
+            self.past = read_past()
+            
+        
     def draw(self,mode):
         if mode == 'scatter':
             scat_x = [self.agents[i].position()[0] for i in range(self.N) if self.agents[i].status]
@@ -83,7 +89,12 @@ class simulation:
             if agent.status:
             
                 # Compute desired velocity 
-                des_x,des_y = agent.desired_velocity(self.des_v)
+                if self.smart and self.simu_step < self.past.past_nt:
+                    vx_past,vy_past = self.past.choose_velocity_from_past(agent.position(), self.simu_step)
+                    des_x, des_y = (self.des_v/2)*(np.array((vx_past,vy_past),dtype = float) + agent.desired_velocity(self.des_v))
+                
+                else:
+                    des_x,des_y= agent.desired_velocity(self.des_v)
                 
                 # Compute repulsion from nearby pedestrians
                 repulsion = np.array((0, 0),dtype = float)
@@ -97,6 +108,7 @@ class simulation:
                 # Compute current velocity with random perturbation and repulsion
                 current_velocity = agent.velocity() + np.random.uniform(-self.noise_intensity, self.noise_intensity,2) + repulsion + wall_repulsion 
         
+                    
                 # Compute acceleration towards desired velocity
                 ax = (des_x - current_velocity[0]) / self.relaxation
                 ay = (des_y - current_velocity[1]) / self.relaxation
@@ -153,8 +165,6 @@ class simulation:
             ys[i] = agent.initial_position[1]
         return xs,ys
 
-        
-    
     def run(self,save = False, where_save = '', verbose = False, draw = False,mode = 'scatter'):
         if save:
             densities = []
@@ -290,6 +300,7 @@ class ped:
 
 class read_past:
     def __init__(self):
+        
         with open('abm_evacuation/config.json') as f:
             var = json.loads(f.read())
             
@@ -314,8 +325,9 @@ class read_past:
         else:
             self.data= np.genfromtxt(self.path_to_past + 'vels.txt',delimiter=',') 
         
-        self.past_ax = np.empty((self.data.shape[0],self.Ny-2,self.Nx-2))
-        self.past_ay = np.empty((self.data.shape[0],self.Ny-2,self.Nx-2))
+        self.past_nt = self.data.shape[0]
+        self.past_ax = np.empty((self.past_nt,self.Ny-2,self.Nx-2))
+        self.past_ay = np.empty((self.past_nt,self.Ny-2,self.Nx-2))
         
         for t in np.arange(self.data.shape[0]-2 ,-1,-1):
             ax = np.reshape(self.data[t,:int(self.data.shape[1]/2)],(self.Ny-2,self.Nx-2))
@@ -325,10 +337,10 @@ class read_past:
             
         # Built past coordinates
         
-        dx = self.room_length/self.Nx
-        dy = self.room_height/self.Ny
+        self.dx = self.room_length/self.Nx
+        self.dy = self.room_height/self.Ny
 
-        self.past_X, self.past_Y = np.meshgrid(np.linspace(3*dx/2,self.room_length-3*dx/2,self.Nx-2),np.linspace(3*dy/2,self.room_height-3*dy/2,self.Ny-2))
+        self.past_X, self.past_Y = np.meshgrid(np.linspace(3*self.dx/2,self.room_length-3*self.dx/2,self.Nx-2),np.linspace(3*self.dy/2,self.room_height-3*self.dy/2,self.Ny-2))
         
         print('The past has been read!')
     
@@ -337,8 +349,35 @@ class read_past:
             plt.quiver(self.past_X,self.past_Y,self.past_ax[t],self.past_ay[t])
             plt.show()
             
+    def choose_velocity_from_past(self,pos,time):
+        x,y = pos
+        ax = self.past_ax[0]
+        ay = self.past_ay[0]
+        if time >= self.data.shape[0]:
+            return (0.,0.)
+        else: 
+            if x < self.room_length-3*self.dx/2:
+                j = int((x-self.dx/2)//self.dx)
+            else:
+                j = self.Nx - 3
+            if y < self.room_height-3*self.dy/2:
+                i = int((y-self.dy/2)//self.dy)
+            else:
+                i = self.Ny - 3
     
+            vx_past = ax[i,j]
+            vy_past = ay[i,j]
             
+            return vx_past,vy_past
+
+
+
+
+        
+            
+
+        
+        
         
             
             
