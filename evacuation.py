@@ -1,17 +1,18 @@
+from scipy.integrate import solve_ivp
 import numpy as np
 import matplotlib.pyplot as plt
 import json
-import os
+
 
 # Create class to describe simulation
 
 class simulation():
-    def __init__(self,with_past = False):
+    def __init__(self,optimal = False,T = 5,densities = []):
         with open('abm_evacuation/config.json') as f:
             var = json.loads(f.read())
         
         # Read doors
-        self.doors = np.empty((len(var['doors']),4))
+        self.doors = np.empty((len(var['doors']),5))
         for i,door in enumerate(var['doors']):
             self.doors[i,:] = np.array(var['doors'][str(door)])
         
@@ -22,7 +23,7 @@ class simulation():
         # Read params for density plot
         self.Nx = var['Nx']
         self.Ny = var['Ny']
-        self.sigma = var['sigma']
+        self.sigma_convolution = var['sigma_convolution']
         
         # Init time variables 
         self.time = 0.
@@ -42,35 +43,45 @@ class simulation():
         
         # Create crowd
         self.agents = np.empty(self.N,dtype=object)
-        xs = np.random.uniform(self.room_length/2, self.room_length-self.rep_radius,self.N)
-        ys = np.random.uniform(self.rep_radius, self.room_height/2,self.N)
+        xs = np.random.uniform(self.rep_radius, self.room_length-self.rep_radius,self.N)
+        ys = np.random.uniform(self.rep_radius, self.room_height-self.rep_radius,self.N)
         for i in range(self.N):
             self.agents[i] = ped(xs[i], ys[i], 0, 0, self.doors, self.room_length, self.room_height)
             self.agents[i].choose_target()
         print('Simulation room created!')
         
-        self.smart = with_past
+        # Create list to store the density at each instant
+        self.densities = []
+        self.densities.append(self.gaussian_density(self.sigma_convolution, self.Nx, self.Ny)[2])
         
-        if self.smart :
-            self.past = read_past()
+        # Load path optimization 
+        self.optimal = optimal
+        
+        if self.optimal :
+            self.optimal = optimal_trajectories(T=T,densities = densities)
+            self.optimal.compute_optimal_velocity()
             
         
-    def draw(self,mode):
+    def draw(self,mode = 'scatter'):
         if mode == 'scatter':
             scat_x = [self.agents[i].position()[0] for i in range(self.N) if self.agents[i].status]
             scat_y = [self.agents[i].position()[1] for i in range(self.N) if self.agents[i].status]
             plt.scatter(scat_x,scat_y,color = 'blue')
         
         if mode == 'arrows':
-            scat_x = [self.agents[i].position()[0] for i in range(self.N) if self.agents[i].status]
-            scat_y = [self.agents[i].position()[1] for i in range(self.N) if self.agents[i].status]
-            scat_vx = [self.agents[i].velocity()[0] for i in range(self.N) if self.agents[i].status]
-            scat_vy = [self.agents[i].velocity()[1] for i in range(self.N) if self.agents[i].status]
-            plt.quiver(scat_x,scat_y,scat_vx, scat_vy,color = 'blue')
+            if self.inside > 0:
+                scat_x = [self.agents[i].position()[0] for i in range(self.N) if self.agents[i].status]
+                scat_y = [self.agents[i].position()[1] for i in range(self.N) if self.agents[i].status]
+                scat_vx = [self.agents[i].velocity()[0] for i in range(self.N) if self.agents[i].status]
+                scat_vy = [self.agents[i].velocity()[1] for i in range(self.N) if self.agents[i].status]
+                plt.quiver(scat_x,scat_y,scat_vx, scat_vy,color = 'blue')
+            else:
+                plt.plot()                 
         
         if mode == 'density':
-            X,Y,d = self.gaussian_density(self.sigma, self.Nx, self.Ny)
-            plt.pcolor(X,Y,d)
+            X,Y,d = self.gaussian_density(self.sigma_convolution, self.Nx, self.Ny)
+            plt.pcolor(X,Y,d.reshape(self.Ny,self.Nx))
+            plt.colorbar()
             
         for door in self.doors:
             plt.plot([door[0]-door[2]/2, door[0] + door[2]/2],[door[1] - door[3]/2, door[1] + door[3]/2], 'r-', linewidth=4)
@@ -89,9 +100,9 @@ class simulation():
             if agent.status:
             
                 # Compute desired velocity 
-                if self.smart and self.simu_step < self.past.past_nt:
-                    vx_past,vy_past = self.past.choose_velocity_from_past(agent.position(), self.simu_step)
-                    des_x, des_y = (self.des_v/2)*(np.array((vx_past,vy_past),dtype = float) + agent.desired_velocity(self.des_v))
+                if self.optimal and self.simu_step < self.optimal.nt_opt:
+                    vx_opt,vy_opt = self.optimal.choose_optimal_velocity(agent.position(), self.simu_step)
+                    des_x, des_y = self.des_v*np.array((vx_opt,vy_opt),dtype = float) 
                 
                 else:
                     des_x,des_y= agent.desired_velocity(self.des_v)
@@ -165,21 +176,16 @@ class simulation():
             ys[i] = agent.initial_position[1]
         return xs,ys
 
-    def run(self,save = False, where_save = '', verbose = False, draw = False,mode = 'scatter'):
-        if save:
-            densities = []
+    def run(self, verbose = False, draw = False,mode = 'scatter'):
+        
         while self.inside > 0:    
             self.step(self.dt,verbose = verbose)
+            self.densities.append(self.gaussian_density(self.sigma_convolution, self.Nx, self.Ny)[2])
             if draw:
                 self.draw(mode)
                 plt.show()
-            if save:
-                densities.append(self.gaussian_density(self.sigma, self.Nx, self.Ny)[2])
+            
         print('Evacuation complete!')
-        if save:
-            densities = np.array(densities).reshape((self.simu_step,self.Nx*self.Ny))
-            np.savetxt(where_save+'m.txt', densities)
-            print('Densities saved!')
                 
     def gaussian_density(self,sigma,Nx,Ny):
         
@@ -202,7 +208,7 @@ class simulation():
                 c_y = Y - y_agent
                 C = np.sqrt(4*np.pi**2*sigma**2)
                 d += np.exp(-(c_x**2 + c_y**2)/(2*sigma**2))/C 
-        return X,Y,d
+        return X,Y,d.reshape(self.Nx*self.Ny)
         
 # Create class to describe pedestrian 
   
@@ -228,9 +234,8 @@ class ped:
         
     def look_target(self):
         x_door,y_door = self.doors[self.target,:2]
-        door_width_x,door_width_y = self.doors[self.target,2:]
+        door_width_x,door_width_y = self.doors[self.target,2:4]
         return (x_door,y_door, door_width_x,door_width_y)
-        
         
     def check_status(self):
         x,y = self.position()
@@ -298,8 +303,8 @@ class ped:
         plt.ylim([0,self.room_height])
         
 
-class read_past:
-    def __init__(self):
+class optimal_trajectories:
+    def __init__(self,T = 5,densities = []):
         
         with open('abm_evacuation/config.json') as f:
             var = json.loads(f.read())
@@ -307,68 +312,149 @@ class read_past:
         # Read room 
         self.room_length = var['room_length']
         self.room_height = var['room_height']
+        self.doors = np.empty((len(var['doors']),5))
+        for i,door in enumerate(var['doors']):
+            self.doors[i,:] = np.array(var['doors'][str(door)])
         
-        # Read params for density plot
+        # Read HJB parameters
         self.Nx = var['Nx']
         self.Ny = var['Ny']
-        self.sigma = var['sigma']
+        self.g = var['hjb_params']['g']
+        self.sigma = var['hjb_params']['sigma']
+        self.mu = var['hjb_params']['mu']
+        self.gamma = var['hjb_params']['gamma']
+        self.alpha = var['hjb_params']['alpha']
+        self.wall_cost = var['hjb_params']['wall_cost']
         
+        # Init density 
+        self.densities = np.array(densities)
+            
         # Init time variables 
-        self.time = 0.
-        self.simu_step = 0
         self.dt = var['dt']
         
-        self.path_to_past = 'data_abm_evac/past/'
-       
-        if len(os.listdir(self.path_to_past)) == 0 :
-            raise ValueError('There is no past!')
-        else:
-            self.data= np.genfromtxt(self.path_to_past + 'vels.txt',delimiter=',') 
+        if len(densities) > 0:
+            self.nt_opt = self.densities.shape[0]
+            self.T = self.dt*self.nt_opt
         
-        self.past_nt = self.data.shape[0]
-        self.past_ax = np.empty((self.past_nt,self.Ny-2,self.Nx-2))
-        self.past_ay = np.empty((self.past_nt,self.Ny-2,self.Nx-2))
-        
-        for t in np.arange(self.data.shape[0]-2 ,-1,-1):
-            ax = np.reshape(self.data[t,:int(self.data.shape[1]/2)],(self.Ny-2,self.Nx-2))
-            ay = np.reshape(self.data[t,int(self.data.shape[1]/2):],(self.Ny-2,self.Nx-2))
-            self.past_ax[(self.data.shape[0]-2)-t] = ax
-            self.past_ay[(self.data.shape[0]-2)-t] = ay
+        else: 
+            self.T = T
+            self.nt_opt = round(self.T/self.dt)
             
-        # Built past coordinates
+        # Create boundary conditions, doors and final cost
         
-        self.dx = self.room_length/self.Nx
-        self.dy = self.room_height/self.Ny
+        self.dx = self.room_length/(self.Nx-1)
+        self.dy = self.room_height/(self.Ny-1)
 
-        self.past_X, self.past_Y = np.meshgrid(np.linspace(3*self.dx/2,self.room_length-3*self.dx/2,self.Nx-2),np.linspace(3*self.dy/2,self.room_height-3*self.dy/2,self.Ny-2))
+        self.X_opt, self.Y_opt = np.meshgrid(np.linspace(0,self.room_length,self.Nx)
+                                             ,np.linspace(0,self.room_height,self.Ny))
         
-        print('The past has been read!')
+        self.vx_opt = np.empty((self.nt_opt-1,self.Ny-2,self.Nx-2))
+        self.vy_opt = np.empty((self.nt_opt-1,self.Ny-2,self.Nx-2))
+        
+        self.u_0 = np.zeros((self.Ny,self.Nx),dtype = float) + self.wall_cost
+        self.u_0[1:-1,1:-1] = 0
     
+        for door in self.doors:
+            if door[2] > 0:
+                door_X = abs(self.X_opt- door[0]) < door[2]
+                door_Y = self.Y_opt == door[1]
+            if door[3] > 0:
+                door_Y = abs(self.Y_opt - door[1]) < door[3]
+                door_X = self.X_opt == door[2]
+            self.u_0[door_X*door_Y] = -door[4]
+
+        self.u_0 = self.u_0.reshape(self.Nx*self.Ny)
+        
+       
     def draw(self):
-        for t in range(self.data.shape[0]-1):
-            plt.quiver(self.past_X,self.past_Y,self.past_ax[t],self.past_ay[t])
+        for i in range(self.nt_opt-1):
+            plt.quiver(self.X_opt[1:-1,1:-1],self.Y_opt[1:-1,1:-1],self.vx_opt[i],self.vy_opt[i])
+            for door in self.doors:
+                plt.plot([door[0]-door[2]/2, door[0] + door[2]/2],[door[1] - door[3]/2, door[1] + door[3]/2], 'r-', linewidth=4)
+            plt.xlim([0,self.room_length])
+            plt.ylim([0,self.room_height])
+            title = 't = {:.2f}s'.format(i*self.dt)
+            plt.title(title)
             plt.show()
             
-    def choose_velocity_from_past(self,pos,time):
+    def compute_optimal_velocity(self):
+        
+        m = self.densities
+        nx = self.Nx
+        ny = self.Ny
+        dx = self.dx
+        dy = self.dy
+        nt = self.nt_opt
+        dt = self.dt
+        
+        def lap(t,u,i):
+            
+            u_temp = u.reshape(ny,nx).copy()
+            
+            lap = (u_temp[:-2,1:-1] + u_temp[2:,1:-1] + \
+                              u_temp[1:-1,:-2] + u_temp[1:-1,2:] - \
+                              4*u_temp[1:-1,1:-1])/(dx*dy)
+                
+            grad_x = (u_temp[1:-1,2:] - u_temp[1:-1,:-2])/(2*dx)
+            grad_y = (u_temp[2:,1:-1] - u_temp[:-2,1:-1])/(2*dy)
+            
+            u_old = u_temp[1:-1,1:-1]
+            
+            interaction = np.zeros((ny-2,nx-2))
+            
+            if m.shape[0] > 0:
+                interaction = m[i,:].reshape(ny,nx)[1:-1,1:-1],axis = 0
+                
+            u_temp[1:-1,1:-1] = -0.5*self.sigma**2*lap +\
+                0.5*(grad_x**2 + grad_y**2)/self.mu + self.gamma*u_old + self.g*interaction
+            
+            return u_temp.reshape(nx*ny)
+        
+        def vels(t,u,mu):
+            
+            u_temp = u.reshape(ny,nx).copy()
+            
+            grad_x = (u_temp[1:-1,2:] - u_temp[1:-1,:-2])/(2*dx)
+            grad_y = (u_temp[2:,1:-1] - u_temp[:-2,1:-1])/(2*dy)
+            
+            vx = -grad_x/mu
+            vy = -grad_y/mu
+            
+            norm = np.sqrt(vx**2 + vy**2)
+            
+            return vx/norm,vy/norm
+        
+        u_0 = self.u_0
+        
+        for i in np.arange(nt-1,0,-1):
+            t_span = ((i+1)*dt,i*dt)
+            sol = solve_ivp(lap, t_span, u_0, args = (i,), method ='RK45')
+            u_0 = sol.y[:,-1]
+            vx,vy = vels(0,sol.y[:,-1],self.mu)
+            self.vx_opt[i-1] = vx
+            self.vy_opt[i-1] = vy
+
+        print('Optimal trajectories have been learnt!')
+    
+    def choose_optimal_velocity(self,pos,t):
         x,y = pos
-        ax = self.past_ax[0]
-        ay = self.past_ay[0]
-        if time >= self.data.shape[0]:
+        if t >= self.nt_opt-1:
             return (0.,0.)
         else: 
-            if x < self.room_length-3*self.dx/2:
-                j = int((x-self.dx/2)//self.dx)
+            if x < self.room_length-self.dx:
+                j = int(x//self.dx)
             else:
                 j = self.Nx - 3
-            if y < self.room_height-3*self.dy/2:
-                i = int((y-self.dy/2)//self.dy)
+            if y < self.room_height-self.dy:
+                i = int(y//self.dy)
             else:
                 i = self.Ny - 3
     
-            vx_past = ax[i,j]
-            vy_past = ay[i,j]
+            vx = self.vx_opt[t][i,j]
+            vy = self.vy_opt[t][i,j]
             
-            return vx_past,vy_past
+            
+            return vx ,vy
 
 
 
