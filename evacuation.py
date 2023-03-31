@@ -3,7 +3,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import json
 
-
 # Create class to describe simulation
 
 class simulation():
@@ -43,8 +42,9 @@ class simulation():
         
         # Create crowd
         self.agents = np.empty(self.N,dtype=object)
-        xs = np.random.uniform(self.rep_radius, self.room_length-self.rep_radius,self.N)
-        ys = np.random.uniform(self.rep_radius, self.room_height-self.rep_radius,self.N)
+        self.initial_box = var['initial_box']
+        xs = np.random.uniform(self.initial_box[0], self.initial_box[1],self.N)
+        ys = np.random.uniform(self.initial_box[2],self.initial_box[3],self.N)
         for i in range(self.N):
             self.agents[i] = ped(xs[i], ys[i], 0, 0, self.doors, self.room_length, self.room_height)
             self.agents[i].choose_target()
@@ -351,24 +351,30 @@ class optimal_trajectories:
         self.vx_opt = np.empty((self.nt_opt-1,self.Ny-2,self.Nx-2))
         self.vy_opt = np.empty((self.nt_opt-1,self.Ny-2,self.Nx-2))
         
-        self.u_0 = np.zeros((self.Ny,self.Nx),dtype = float) + self.wall_cost
-        self.u_0[1:-1,1:-1] = 0
+        self.u_0 = np.zeros((self.Ny,self.Nx),dtype = float)
+        
+        self.V = np.zeros((self.Ny,self.Nx)) - self.wall_cost
+        self.V[1:-1,1:-1] = 0
     
-        for door in self.doors:
+        for door in var['doors']:
+            door = var['doors'][door]
             if door[2] > 0:
-                door_X = abs(self.X_opt- door[0]) < door[2]
-                door_Y = self.Y_opt == door[1]
+                door_X = abs(self.X_opt - door[0]) < door[2]
+                door_Y = abs(self.Y_opt - door[1]) < 0.2*door[2]
             if door[3] > 0:
                 door_Y = abs(self.Y_opt - door[1]) < door[3]
-                door_X = self.X_opt == door[2]
-            self.u_0[door_X*door_Y] = -door[4]
+                door_X = abs(self.X_opt - door[0]) < 0.2*door[3]
+            self.V[door_X*door_Y] = door[4]
 
         self.u_0 = self.u_0.reshape(self.Nx*self.Ny)
         
        
     def draw(self):
         for i in range(self.nt_opt-1):
-            plt.quiver(self.X_opt[1:-1,1:-1],self.Y_opt[1:-1,1:-1],self.vx_opt[i],self.vy_opt[i])
+            if i < self.nt_opt-2:
+                plt.quiver(self.X_opt[1:-1,1:-1],self.Y_opt[1:-1,1:-1],self.vx_opt[i],self.vy_opt[i])
+            else:
+                plt.plot()
             for door in self.doors:
                 plt.plot([door[0]-door[2]/2, door[0] + door[2]/2],[door[1] - door[3]/2, door[1] + door[3]/2], 'r-', linewidth=4)
             plt.xlim([0,self.room_length])
@@ -385,11 +391,16 @@ class optimal_trajectories:
         dx = self.dx
         dy = self.dy
         nt = self.nt_opt
-        dt = self.dt
-        
+    
         def lap(t,u,i):
             
-            u_temp = u.reshape(ny,nx).copy()
+            u_temp = np.empty((ny+2,nx+2))
+            u_temp[1:-1,1:-1] = u.reshape(ny,nx).copy()
+            
+            u_temp[0,:] = u_temp[1,:] 
+            u_temp[-1,:] = u_temp[-2,:]
+            u_temp[:,-1] =  u_temp[:,-2] 
+            u_temp[:,0]  =  u_temp[:,1]  
             
             lap = (u_temp[:-2,1:-1] + u_temp[2:,1:-1] + \
                               u_temp[1:-1,:-2] + u_temp[1:-1,2:] - \
@@ -398,19 +409,20 @@ class optimal_trajectories:
             grad_x = (u_temp[1:-1,2:] - u_temp[1:-1,:-2])/(2*dx)
             grad_y = (u_temp[2:,1:-1] - u_temp[:-2,1:-1])/(2*dy)
             
-            u_old = u_temp[1:-1,1:-1]
-            
-            interaction = np.zeros((ny-2,nx-2))
+            m_temp = np.zeros((ny,nx))
             
             if m.shape[0] > 0:
-                interaction = m[i,:].reshape(ny,nx)[1:-1,1:-1],axis = 0
+                m_temp = np.flip(m[i,:].reshape(ny,nx),axis = 0)
                 
-            u_temp[1:-1,1:-1] = -0.5*self.sigma**2*lap +\
-                0.5*(grad_x**2 + grad_y**2)/self.mu + self.gamma*u_old + self.g*interaction
             
-            return u_temp.reshape(nx*ny)
+            u_temp[1:-1,1:-1] = -0.5*self.sigma**2*lap +\
+                0.5*(grad_x**2 + grad_y**2)/self.mu  +\
+                    self.gamma*u_temp[1:-1,1:-1] + self.V +\
+                        self.g*m_temp
+                        
+            return u_temp[1:-1,1:-1].reshape(nx*ny)
         
-        def vels(t,u,mu):
+        def vels(u,mu):
             
             u_temp = u.reshape(ny,nx).copy()
             
@@ -425,12 +437,15 @@ class optimal_trajectories:
             return vx/norm,vy/norm
         
         u_0 = self.u_0
+      
+        t_span = (self.T,0)
+      
+        t_events = np.linspace(self.T,0,self.nt_opt)
+
+        sol = solve_ivp(lap, t_span, u_0, method ='RK45',t_eval = t_events,args = (0,))
         
         for i in np.arange(nt-1,0,-1):
-            t_span = ((i+1)*dt,i*dt)
-            sol = solve_ivp(lap, t_span, u_0, args = (i,), method ='RK45')
-            u_0 = sol.y[:,-1]
-            vx,vy = vels(0,sol.y[:,-1],self.mu)
+            vx,vy = vels(sol.y[:,nt - i ],self.mu)
             self.vx_opt[i-1] = vx
             self.vy_opt[i-1] = vy
 
@@ -452,7 +467,6 @@ class optimal_trajectories:
     
             vx = self.vx_opt[t][i,j]
             vy = self.vy_opt[t][i,j]
-            
             
             return vx ,vy
 
