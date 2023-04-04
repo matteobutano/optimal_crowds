@@ -1,12 +1,14 @@
 from scipy.integrate import solve_ivp
+from scipy.ndimage import rotate
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.patches import Polygon
 import json
 
 # Create class to describe simulation
 
 class simulation():
-    def __init__(self,optimal = False,T = 5,densities = []):
+    def __init__(self,optimal = False,T = 10,densities = []):
         with open('abm_evacuation/config.json') as f:
             var = json.loads(f.read())
         
@@ -55,9 +57,9 @@ class simulation():
         self.densities.append(self.gaussian_density(self.sigma_convolution, self.Nx, self.Ny)[2])
         
         # Load path optimization 
-        self.optimal = optimal
+        self.is_optimal = optimal
         
-        if self.optimal :
+        if self.is_optimal :
             self.optimal = optimal_trajectories(T=T,densities = densities)
             self.optimal.compute_optimal_velocity()
             
@@ -83,8 +85,10 @@ class simulation():
             plt.pcolor(X,Y,d.reshape(self.Ny,self.Nx))
             plt.colorbar()
             
-        for door in self.doors:
-            plt.plot([door[0]-door[2]/2, door[0] + door[2]/2],[door[1] - door[3]/2, door[1] + door[3]/2], 'r-', linewidth=4)
+        # for door in self.doors:
+        #     plt.plot([door[0]-door[2]/2, door[0] + door[2]/2],[door[1] - door[3]/2, door[1] + door[3]/2], 'r-', linewidth=4)
+        
+        plt.imshow(np.flip(self.optimal.V,axis = 0),extent=[0,self.room_length,0,self.room_height])
         plt.xlim([0,self.room_length])
         plt.ylim([0,self.room_height])
         title = 't = {:.2f}s exit = {}/{}'.format(self.time,self.N - self.inside,self.N)
@@ -295,6 +299,7 @@ class ped:
             wall_repulsion += -repulsion_intensity*(repulsion_radius - (self.room_height - y)) / repulsion_radius * np.array((0, -1))
             
         return wall_repulsion
+        
             
     def draw_trajectory(self):
         traj = np.array(self.traj)
@@ -324,7 +329,7 @@ class optimal_trajectories:
         self.mu = var['hjb_params']['mu']
         self.gamma = var['hjb_params']['gamma']
         self.alpha = var['hjb_params']['alpha']
-        self.wall_cost = var['hjb_params']['wall_cost']
+        self.pot = var['hjb_params']['potential']
         
         # Init density 
         self.densities = np.array(densities)
@@ -352,36 +357,81 @@ class optimal_trajectories:
         self.vy_opt = np.empty((self.nt_opt-1,self.Ny-2,self.Nx-2))
         
         self.u_0 = np.zeros((self.Ny,self.Nx),dtype = float)
+        self.phi_0 =  np.zeros((self.Ny,self.Nx),dtype = float)
+        self.evacuator = np.zeros((self.Ny,self.Nx),dtype = float) + 1
         
-        self.V = np.zeros((self.Ny,self.Nx)) - self.wall_cost
+       
+        self.V = np.zeros((self.Ny,self.Nx)) + self.pot
         self.V[1:-1,1:-1] = 0
-    
+       
+        
+        
+        
+        for walls in var['walls']:
+            wall = var['walls'][walls]
+
+            mask_X = abs(self.X_opt-wall[0]) < wall[2]/2
+            mask_Y = abs(self.Y_opt-wall[1]) < wall[3]/2
+            hole_X = abs(self.X_opt-wall[0]) < wall[5]/2
+            hole_Y = abs(self.Y_opt-wall[1]) < wall[3]/2
+            
+            V_temp = np.zeros((self.Ny,self.Nx))
+            
+            V_temp[mask_X*mask_Y] = self.pot
+            V_temp[hole_X*hole_Y] = 0
+            
+            angle = wall[4]
+            
+            if angle != 0: 
+                self.V += rotate(V_temp, angle, reshape=False,mode = 'reflect',prefilter= True)
+            else:
+                self.V += V_temp
+            
+        for cyls in var['cylinders']:
+            cyl = var['cylinders'][cyls]
+            
+            V_temp =  np.zeros((self.Ny,self.Nx))
+            
+            V_temp[np.sqrt((self.X_opt-cyl[0])**2 + (self.Y_opt-cyl[1])**2) < cyl[2]] = self.pot
+            
+            self.V+= V_temp
+        
+        self.V = self.pot *(self.V <= self.pot)  
+        
         for door in var['doors']:
             door = var['doors'][door]
             if door[2] > 0:
-                door_X = abs(self.X_opt - door[0]) < door[2]
+                door_X = abs(self.X_opt - door[0]) < door[2]/2
                 door_Y = abs(self.Y_opt - door[1]) < 0.2*door[2]
             if door[3] > 0:
-                door_Y = abs(self.Y_opt - door[1]) < door[3]
+                door_Y = abs(self.Y_opt - door[1]) < door[3]/2
                 door_X = abs(self.X_opt - door[0]) < 0.2*door[3]
+            self.evacuator[door_X*door_Y] = 0
             self.V[door_X*door_Y] = door[4]
-
-        self.u_0 = self.u_0.reshape(self.Nx*self.Ny)
+            self.phi_0[door_X*door_Y] = door[4]
+            
+        self.phi_0 = self.phi_0.reshape(self.Nx*self.Ny)
         
        
-    def draw(self):
-        for i in range(self.nt_opt-1):
-            if i < self.nt_opt-2:
-                plt.quiver(self.X_opt[1:-1,1:-1],self.Y_opt[1:-1,1:-1],self.vx_opt[i],self.vy_opt[i])
-            else:
-                plt.plot()
-            for door in self.doors:
-                plt.plot([door[0]-door[2]/2, door[0] + door[2]/2],[door[1] - door[3]/2, door[1] + door[3]/2], 'r-', linewidth=4)
-            plt.xlim([0,self.room_length])
-            plt.ylim([0,self.room_height])
-            title = 't = {:.2f}s'.format(i*self.dt)
-            plt.title(title)
+    def draw(self,mode):
+        if mode == 'trajectories':
+            for i in range(self.nt_opt-1):
+                if i < self.nt_opt-2:
+                    plt.quiver(self.X_opt[1:-1,1:-1],self.Y_opt[1:-1,1:-1],self.vx_opt[i],self.vy_opt[i])
+                else:
+                    plt.plot()
+                for door in self.doors:
+                    plt.plot([door[0]-door[2]/2, door[0] + door[2]/2],[door[1] - door[3]/2, door[1] + door[3]/2], 'r-', linewidth=4)
+                plt.xlim([0,self.room_length])
+                plt.ylim([0,self.room_height])
+                title = 't = {:.2f}s'.format(i*self.dt)
+                plt.title(title)
+                plt.show()
+        elif mode == 'setup':
+            plt.pcolor(self.X_opt,self.Y_opt,self.V)
+            plt.colorbar()
             plt.show()
+        
             
     def compute_optimal_velocity(self):
         
@@ -391,61 +441,65 @@ class optimal_trajectories:
         dx = self.dx
         dy = self.dy
         nt = self.nt_opt
-    
-        def lap(t,u,i):
+     
+        def hjb_cole_hopf(t,phi,i):
             
-            u_temp = np.empty((ny+2,nx+2))
-            u_temp[1:-1,1:-1] = u.reshape(ny,nx).copy()
+            lim = 10e-5
+        
+            phi_temp = np.empty((ny+2,nx+2))
+            phi_temp[1:-1,1:-1] = phi.reshape(ny,nx).copy()
             
-            u_temp[0,:] = u_temp[1,:] 
-            u_temp[-1,:] = u_temp[-2,:]
-            u_temp[:,-1] =  u_temp[:,-2] 
-            u_temp[:,0]  =  u_temp[:,1]  
+            phi_temp[0,:] = phi_temp[1,:] 
+            phi_temp[-1,:] = phi_temp[-2,:]
+            phi_temp[:,-1] =  phi_temp[:,-2] 
+            phi_temp[:,0]  =  phi_temp[:,1]  
             
-            lap = (u_temp[:-2,1:-1] + u_temp[2:,1:-1] + \
-                              u_temp[1:-1,:-2] + u_temp[1:-1,2:] - \
-                              4*u_temp[1:-1,1:-1])/(dx*dy)
-                
-            grad_x = (u_temp[1:-1,2:] - u_temp[1:-1,:-2])/(2*dx)
-            grad_y = (u_temp[2:,1:-1] - u_temp[:-2,1:-1])/(2*dy)
+            lap = (phi_temp[:-2,1:-1] + phi_temp[2:,1:-1] + \
+                              phi_temp[1:-1,:-2] + phi_temp[1:-1,2:] - \
+                              4*phi_temp[1:-1,1:-1])/(dx*dy)
             
             m_temp = np.zeros((ny,nx))
             
             if m.shape[0] > 0:
-                m_temp = np.flip(m[i,:].reshape(ny,nx),axis = 0)
+                m_temp = np.flip(m[i,:].reshape(ny,nx),axis = 0)*self.evacuator 
                 
+            phi_log_temp = phi_temp[1:-1,1:-1]*(phi_temp[1:-1,1:-1] > lim) + lim*(phi_temp[1:-1,1:-1]<lim)
             
-            u_temp[1:-1,1:-1] = -0.5*self.sigma**2*lap +\
-                0.5*(grad_x**2 + grad_y**2)/self.mu  +\
-                    self.gamma*u_temp[1:-1,1:-1] + self.V +\
-                        self.g*m_temp
-                        
-            return u_temp[1:-1,1:-1].reshape(nx*ny)
+            phi_temp[1:-1,1:-1] = -0.5*self.sigma**2*lap - ((self.V+self.g*m_temp)*phi_temp[1:-1,1:-1])/(self.mu*self.sigma**2) +\
+                self.gamma*phi_temp[1:-1,1:-1]*np.log(phi_log_temp)
+         
+            return phi_temp[1:-1,1:-1].reshape(nx*ny)
         
-        def vels(u,mu):
+        def vels_cole_hopf(phi,mu):
             
-            u_temp = u.reshape(ny,nx).copy()
+            lim = 10e-5
             
-            grad_x = (u_temp[1:-1,2:] - u_temp[1:-1,:-2])/(2*dx)
-            grad_y = (u_temp[2:,1:-1] - u_temp[:-2,1:-1])/(2*dy)
+            phi_temp = phi.reshape(ny,nx).copy()
             
-            vx = -grad_x/mu
-            vy = -grad_y/mu
+            grad_x = (phi_temp[1:-1,2:] - phi_temp[1:-1,:-2])/(2*dx)
+            grad_y = (phi_temp[2:,1:-1] - phi_temp[:-2,1:-1])/(2*dy)
+            
+            phi_den = phi_temp[1:-1,1:-1]*(phi_temp[1:-1,1:-1] > lim) + lim*(phi_temp[1:-1,1:-1]<lim)
+            
+            vx = grad_x/(mu*phi_den)
+            vy = grad_y/(mu*phi_den)
             
             norm = np.sqrt(vx**2 + vy**2)
             
+            norm = norm*(norm > lim) + lim*(norm < lim)
+            
             return vx/norm,vy/norm
         
-        u_0 = self.u_0
+        phi_0 = self.phi_0
       
         t_span = (self.T,0)
       
         t_events = np.linspace(self.T,0,self.nt_opt)
 
-        sol = solve_ivp(lap, t_span, u_0, method ='RK45',t_eval = t_events,args = (0,))
+        sol = solve_ivp(hjb_cole_hopf, t_span, phi_0, method ='RK45',t_eval = t_events,args = (0,))
         
         for i in np.arange(nt-1,0,-1):
-            vx,vy = vels(sol.y[:,nt - i ],self.mu)
+            vx,vy = vels_cole_hopf(sol.y[:,nt - i ],self.mu)
             self.vx_opt[i-1] = vx
             self.vy_opt[i-1] = vy
 
