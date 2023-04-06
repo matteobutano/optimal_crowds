@@ -1,8 +1,6 @@
 from scipy.integrate import solve_ivp
-from scipy.ndimage import rotate
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.patches import Polygon
 import json
 
 # Create class to describe simulation
@@ -327,8 +325,6 @@ class optimal_trajectories:
         self.g = var['hjb_params']['g']
         self.sigma = var['hjb_params']['sigma']
         self.mu = var['hjb_params']['mu']
-        self.gamma = var['hjb_params']['gamma']
-        self.alpha = var['hjb_params']['alpha']
         self.pot = var['hjb_params']['potential']
         
         # Init density 
@@ -363,7 +359,7 @@ class optimal_trajectories:
        
         self.V = np.zeros((self.Ny,self.Nx)) + self.pot
         self.V[1:-1,1:-1] = 0
-       
+        self.lim = 10e-6
         
         
         
@@ -372,21 +368,22 @@ class optimal_trajectories:
 
             mask_X = abs(self.X_opt-wall[0]) < wall[2]/2
             mask_Y = abs(self.Y_opt-wall[1]) < wall[3]/2
-            hole_X = abs(self.X_opt-wall[0]) < wall[5]/2
-            hole_Y = abs(self.Y_opt-wall[1]) < wall[3]/2
+           
             
             V_temp = np.zeros((self.Ny,self.Nx))
             
             V_temp[mask_X*mask_Y] = self.pot
-            V_temp[hole_X*hole_Y] = 0
             
-            angle = wall[4]
+            self.V += V_temp
+         
+        for holes in var['holes']:
+            hole = var['holes'][holes]
+        
+            hole_X = abs(self.X_opt-hole[0]) < hole[2]/2
+            hole_Y = abs(self.Y_opt-hole[1]) < hole[3]/2
             
-            if angle != 0: 
-                self.V += rotate(V_temp, angle, reshape=False,mode = 'reflect',prefilter= True)
-            else:
-                self.V += V_temp
-            
+            self.V[hole_X*hole_Y] = 0   
+        
         for cyls in var['cylinders']:
             cyl = var['cylinders'][cyls]
             
@@ -443,16 +440,14 @@ class optimal_trajectories:
         nt = self.nt_opt
      
         def hjb_cole_hopf(t,phi,i):
-            
-            lim = 10e-5
         
             phi_temp = np.empty((ny+2,nx+2))
             phi_temp[1:-1,1:-1] = phi.reshape(ny,nx).copy()
             
-            phi_temp[0,:] = phi_temp[1,:] 
-            phi_temp[-1,:] = phi_temp[-2,:]
-            phi_temp[:,-1] =  phi_temp[:,-2] 
-            phi_temp[:,0]  =  phi_temp[:,1]  
+            phi_temp[0,:] = phi_temp[2,:] 
+            phi_temp[-1,:] = phi_temp[-3,:]
+            phi_temp[:,-1] =  phi_temp[:,-3] 
+            phi_temp[:,0]  =  phi_temp[:,2]  
             
             lap = (phi_temp[:-2,1:-1] + phi_temp[2:,1:-1] + \
                               phi_temp[1:-1,:-2] + phi_temp[1:-1,2:] - \
@@ -462,17 +457,14 @@ class optimal_trajectories:
             
             if m.shape[0] > 0:
                 m_temp = np.flip(m[i,:].reshape(ny,nx),axis = 0)*self.evacuator 
-                
-            phi_log_temp = phi_temp[1:-1,1:-1]*(phi_temp[1:-1,1:-1] > lim) + lim*(phi_temp[1:-1,1:-1]<lim)
             
-            phi_temp[1:-1,1:-1] = -0.5*self.sigma**2*lap - ((self.V+self.g*m_temp)*phi_temp[1:-1,1:-1])/(self.mu*self.sigma**2) +\
-                self.gamma*phi_temp[1:-1,1:-1]*np.log(phi_log_temp)
+            phi_temp[1:-1,1:-1] = -0.5*self.sigma**2*lap - ((self.V+self.g*m_temp)*phi_temp[1:-1,1:-1])/(self.mu*self.sigma**2)
          
             return phi_temp[1:-1,1:-1].reshape(nx*ny)
         
         def vels_cole_hopf(phi,mu):
             
-            lim = 10e-5
+            lim = self.lim
             
             phi_temp = phi.reshape(ny,nx).copy()
             
