@@ -37,7 +37,7 @@
 "sigma_convolution": 0.1,
 
 "hjb_params":{
-    "g": -0.1,
+    "g": -0.01,
     "sigma": 0.5,
     "mu": 0.5,
     "potential": -200,

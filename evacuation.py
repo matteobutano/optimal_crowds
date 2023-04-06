@@ -7,7 +7,7 @@ import json
 
 class simulation:
     def __init__(self, mode,T = 10):
-        with open('abm_evacuation/config.json') as f:
+        with open('optimal_crowds/config.json') as f:
             var = json.loads(f.read())
         
         # Read doors
@@ -393,7 +393,7 @@ class ped:
 class optimal_trajectories:
     def __init__(self,T):
         
-        with open('abm_evacuation/config.json') as f:
+        with open('optimal_crowds/config.json') as f:
             var = json.loads(f.read())
             
         # Read room 
