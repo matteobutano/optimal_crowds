@@ -1,14 +1,16 @@
 {
 
 "N": 50,
-"dt": 1,
+"dt": 0.01,
 "room_length": 10,
-"room_height": 5,
-"Nx": 60,
+"room_height": 6,
+"Nx": 50,
 "Ny": 30,
 
 "doors":{
-	"door_1": [1.5, 5, 0.5, 0 ,1]
+	"door_1": [0.5, 6, 1, 0 ,0.1],
+	"door_2": [9.5, 6, 1, 0 ,0.1]
+	
     },
 
 "walls":{
@@ -20,7 +22,9 @@
     
 "holes":{
     "hole_1":[5,4,1,0.5],
-    "hole_2":[2,2,0.5,1]
+    "hole_2":[2,2,0.5,1],
+    "hole_3":[8,2,0.5,1]
+    
 },
 
 "cylinders":{
@@ -34,13 +38,13 @@
 "noise_intensity": 0.05,	
 "des_v": 1,
 "relaxation": 0.1,
-"sigma_convolution": 0.1,
+"sigma_convolution": 0.3,
 
 "hjb_params":{
-    "g": -0.01,
-    "sigma": 0.5,
-    "mu": 0.5,
-    "potential": -200,
+    "g": -0.05,
+    "sigma": 0.35,
+    "mu": 1,
+    "potential": -300,
     "initial_density": 1
 }
 }

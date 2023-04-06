@@ -43,8 +43,7 @@ class simulation:
             wall = var['walls'][walls]
 
             mask_X = abs(self.X_opt-wall[0]) < wall[2]/2
-            mask_Y = abs(self.Y_opt-wall[1]) < wall[3]/2
-           
+            mask_Y = abs(self.Y_opt-wall[1]) < wall[3]/2          
             
             V_temp = np.zeros((self.Ny,self.Nx))
             
@@ -118,8 +117,7 @@ class simulation:
                self.agents[i].choose_target()
                
            print('ABM simulation room created!')
-           
-           
+                     
            self.optimal.compute_optimal_velocity()
         
         elif self.type =='mfg':
@@ -133,9 +131,9 @@ class simulation:
         
            print('MFG simulation room created!')
         
-   
-        
     def draw(self,mode = 'scatter'):
+        
+        plt.figure(figsize = (self.room_length,self.room_height))
         
         if self.type == 'abm':
         
@@ -270,8 +268,6 @@ class simulation:
         elif self.type == 'mfg':
             
             self.optimal.mean_field_game(self.m_0,draw = draw,verbose=verbose)
-            
-            
                 
     def gaussian_density(self,sigma,Nx,Ny):
         
@@ -381,15 +377,14 @@ class ped:
             wall_repulsion += -repulsion_intensity*(repulsion_radius - (self.room_height - y)) / repulsion_radius * np.array((0, -1))
             
         return wall_repulsion
-        
-            
+                    
     def draw_trajectory(self):
         traj = np.array(self.traj)
         plt.plot(traj[:,0],traj[:,1])
         plt.xlim([0,self.room_length])
         plt.ylim([0,self.room_height])
-        
 
+# Create class that computes optimal trajs and mfg
 class optimal_trajectories:
     def __init__(self,T):
         
@@ -577,6 +572,19 @@ class optimal_trajectories:
         gam_total =  sol_gam.y.reshape((ny,nx,nt))
         m_total = phi_total*gam_total
             
+        if draw:
+            
+            plt.figure(figsize = (self.room_length,self.room_height))
+        
+            for t in range(nt):
+                
+                plt.imshow(np.flip(m_total[:,:,t]*self.evacuator + self.V/self.pot,axis = 0),extent=[0,self.room_length,0,self.room_height])
+                plt.title(t)        
+                plt.clim([0,2])
+                plt.colorbar()
+                
+                plt.show()
+        
         epoch = 0
         
         err = 1
@@ -605,9 +613,11 @@ class optimal_trajectories:
         
         if draw: 
             
+            plt.figure(figsize = (self.room_length,self.room_height))
+            
             for t in range(nt):
                 
-                plt.pcolor(self.X_opt,self.Y_opt,m_total[:,:,t]*self.evacuator)
+                plt.imshow(np.flip(m_total[:,:,t]*self.evacuator + self.V/self.pot,axis = 0),extent=[0,self.room_length,0,self.room_height])
                 plt.title(t)        
                 plt.clim([0,2])
                 plt.colorbar()
@@ -615,8 +625,6 @@ class optimal_trajectories:
                 plt.show()
             
         return m_total
-            
-        
     
     def compute_optimal_velocity(self):
         
