@@ -162,11 +162,7 @@ class simulation:
         elif self.type == 'mfg':
             
             plt.pcolor(self.X_opt, self.Y_opt,self.m_0 + 2*self.initial_density*self.V/self.pot)
-            
-            
-        # for door in self.doors:
-        #     plt.plot([door[0]-door[2]/2, door[0] + door[2]/2],[door[1] - door[3]/2, door[1] + door[3]/2], 'r-', linewidth=4)
-        
+                    
         plt.imshow(np.flip(self.V,axis = 0),extent=[0,self.room_length,0,self.room_height])
         plt.xlim([0,self.room_length])
         plt.ylim([0,self.room_height])
