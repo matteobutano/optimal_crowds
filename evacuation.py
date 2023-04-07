@@ -85,6 +85,7 @@ class simulation:
         self.phi_0 = self.phi_0.reshape(self.Nx*self.Ny)
         
         # Init time variables 
+        self.T = T
         self.time = 0.
         self.simu_step = 0
         self.dt = var['dt']
@@ -99,7 +100,7 @@ class simulation:
         self.relaxation = var['relaxation']
         self.rep_radius = var['repulsion_radius']
         self.rep_int = var['repulsion_intensity']
-        self.noise_intensity = var['hjb_params']['sigma']
+        self.noise_intensity = var['noise_intensity']
         self.des_v = var['des_v']
         
         self.agents = np.empty(self.N,dtype=object)
@@ -145,6 +146,12 @@ class simulation:
                         c = self.agents[i].position()
                         C = plt.Circle(c,radius = 0.2)
                         plt.gca().add_artist(C)
+                plt.imshow(np.flip(self.V,axis = 0),extent=[0,self.room_length,0,self.room_height])
+                plt.xlim([0,self.room_length])
+                plt.ylim([0,self.room_height])
+                title = 't = {:.2f}s exit = {}/{}'.format(self.time,self.N - self.inside,self.N)
+                plt.title(title)
+                plt.show()
              
             if mode == 'arrows':
                 if self.inside > 0:
@@ -154,23 +161,32 @@ class simulation:
                     scat_vy = [self.agents[i].velocity()[1] for i in range(self.N) if self.agents[i].status]
                     plt.quiver(scat_x,scat_y,scat_vx, scat_vy,color = 'blue')
                 else:
-                    plt.plot()                 
+                    plt.plot() 
+                plt.imshow(np.flip(self.V,axis = 0),extent=[0,self.room_length,0,self.room_height])
+                plt.xlim([0,self.room_length])
+                plt.ylim([0,self.room_height])
+                title = 't = {:.2f}s exit = {}/{}'.format(self.time,self.N - self.inside,self.N)
+                plt.title(title)
+                plt.show()
             
             if mode == 'density':
-                X,Y,d = self.gaussian_density(self.sigma_convolution, self.Nx, self.Ny)
-                plt.pcolor(X,Y,d.reshape(self.Ny,self.Nx))
+                d = self.gaussian_density(self.sigma_convolution, self.Nx, self.Ny)
+                # plt.imshow(d.reshape(self.Ny,self.Nx),extent=[0,self.room_length,0,self.room_height])
+                
+                plt.imshow(np.flip(self.V/self.pot,axis = 0) + d,extent=[0,self.room_length,0,self.room_height])
+                plt.xlim([0,self.room_length])
+                plt.ylim([0,self.room_height])
                 plt.colorbar()
+                plt.clim(0,2)
+                title = 't = {:.2f}s exit = {}/{}'.format(self.time,self.N - self.inside,self.N)
+                plt.title(title)
+                plt.show()
             
         elif self.type == 'mfg':
             
             plt.pcolor(self.X_opt, self.Y_opt,self.m_0 + 2*self.initial_density*self.V/self.pot)
                     
-        plt.imshow(np.flip(self.V,axis = 0),extent=[0,self.room_length,0,self.room_height])
-        plt.xlim([0,self.room_length])
-        plt.ylim([0,self.room_height])
-        title = 't = {:.2f}s exit = {}/{}'.format(self.time,self.N - self.inside,self.N)
-        plt.title(title)
-        plt.show()
+        
             
     def step(self,dt,verbose =  False):
         for i in  np.random.choice(np.arange(self.N),self.N,replace=False):
@@ -181,12 +197,7 @@ class simulation:
             if agent.status:
             
                 # Compute desired velocity 
-                if self.simu_step < self.optimal.nt_opt:
-                    vx_opt,vy_opt = self.optimal.choose_optimal_velocity(agent.position(), self.simu_step)
-                    des_x, des_y = self.des_v*np.array((vx_opt,vy_opt),dtype = float) 
-                
-                else:
-                    des_x,des_y= agent.desired_velocity(self.des_v)
+                des_x, des_y  = self.optimal.choose_optimal_velocity(agent.position(), self.simu_step)
                 
                 # Compute repulsion from nearby pedestrians
                 repulsion = np.array((0, 0),dtype = float)
@@ -198,7 +209,7 @@ class simulation:
                 wall_repulsion = np.array(agent.wall_repulsion(self.rep_radius, self.rep_int,self.X_opt,self.Y_opt,self.V),dtype=float)
                 
                 # Compute current velocity with random perturbation and repulsion
-                current_velocity = agent.velocity() + np.random.uniform(-self.noise_intensity, self.noise_intensity,2) + repulsion + wall_repulsion 
+                current_velocity = agent.velocity() + 0.5*self.noise_intensity*np.random.normal(size = 2) + repulsion + wall_repulsion 
         
                     
                 # Compute acceleration towards desired velocity
@@ -261,13 +272,15 @@ class simulation:
         
         if self.type == 'abm':
         
-            while self.inside > 0:    
+            while (self.inside > 0) & (self.time < self.T):    
                 self.step(self.dt,verbose = verbose)
                 if draw:
                     self.draw(mode)
                     plt.show()
-                
-            print('Evacuation complete!')
+            if self.inside == 0:
+                print('Evacuation complete!')
+            else:
+                print('Evacuation failed!')
             
         elif self.type == 'mfg':
             
@@ -294,7 +307,7 @@ class simulation:
                 c_y = Y - y_agent
                 C = np.sqrt(4*np.pi**2*sigma**2)
                 d += np.exp(-(c_x**2 + c_y**2)/(2*sigma**2))/C 
-        return X,Y,d.reshape(self.Nx*self.Ny)
+        return d
         
 # Create class to describe pedestrian 
   
@@ -357,7 +370,7 @@ class ped:
         distance = np.sqrt(rep_v[0]**2 + rep_v[1]**2)
         rep = np.array((0,0),dtype = float)
         if distance < repulsion_radius:
-            rep = np.array(((repulsion_intensity * (repulsion_radius - distance)) / distance )* rep_v,dtype = float)
+            rep = np.array((repulsion_intensity / distance )* rep_v,dtype = float)
         return rep
         
     def wall_repulsion(self,repulsion_radius, repulsion_intensity,X,Y,V):
@@ -378,7 +391,7 @@ class ped:
             rep = -np.array((x - X[ind],y-Y[ind]),dtype = float)
             if self.distance(door[0],door[1]) < door[2] + door[3]:
                 attr = np.array((x - door[0],y-door[1]),dtype = float)
-                return repulsion_intensity* (rep/d[ind] + attr/self.distance(door[0],door[1]))
+                return repulsion_intensity* (rep/d[ind] + attr)
             else: 
                 return repulsion_intensity*(rep/d[ind])
         else:
@@ -434,7 +447,7 @@ class optimal_trajectories:
         
         self.V = np.zeros((self.Ny,self.Nx)) + self.pot
         self.V[1:-1,1:-1] = 0
-        self.lim = 10e-8
+        self.lim = 10e-10
         
         for walls in var['walls']:
             wall = var['walls'][walls]
@@ -580,15 +593,13 @@ class optimal_trajectories:
             
         if draw:
             
-            plt.figure(figsize = (self.room_length,self.room_height))
-        
             for t in range(nt):
                 
+                plt.figure(figsize = (self.room_length,self.room_height))
                 plt.imshow(np.flip(m_total[:,:,t]*self.evacuator + self.V/self.pot,axis = 0),extent=[0,self.room_length,0,self.room_height])
-                plt.title(t)        
                 plt.clim([0,2])
                 plt.colorbar()
-                
+                plt.title('Optimal evacuation, t = {:.2f}s'.format(dt*t))
                 plt.show()
         
         epoch = 0
@@ -619,14 +630,14 @@ class optimal_trajectories:
         
         if draw: 
             
-            plt.figure(figsize = (self.room_length,self.room_height))
-            
             for t in range(nt):
                 
+                plt.figure(figsize = (self.room_length,self.room_height))
                 plt.imshow(np.flip(m_total[:,:,t]*self.evacuator + self.V/self.pot,axis = 0),extent=[0,self.room_length,0,self.room_height])
                 plt.title(t)        
                 plt.clim([0,2])
                 plt.colorbar()
+                plt.title('Nash equilibrium, t = {:.2f}s'.format(dt*t))
                 
                 plt.show()
             
@@ -689,6 +700,7 @@ class optimal_trajectories:
         sol = solve_ivp(hjb, t_span, phi_0, method ='RK45',t_eval = t_events,args = (0,))
         
         for i in np.arange(nt-1,0,-1):
+            
             vx,vy = vels(sol.y[:,nt - i ],self.mu)
             self.vx_opt[i-1] = vx
             self.vy_opt[i-1] = vy
@@ -712,7 +724,7 @@ class optimal_trajectories:
             vx = self.vx_opt[t][i,j]
             vy = self.vy_opt[t][i,j]
             
-            return vx ,vy
+            return np.array((vx ,vy), dtype = float)
 
 
 
