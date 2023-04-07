@@ -80,7 +80,6 @@ class simulation:
                 door_X = abs(self.X_opt - door[0]) < 0.2*door[3]
             self.evacuator[door_X*door_Y] = 0
             self.V[door_X*door_Y] = door[4]
-            self.phi_0[door_X*door_Y] = door[4]
             
         self.phi_0 = self.phi_0.reshape(self.Nx*self.Ny)
         
@@ -100,7 +99,7 @@ class simulation:
         self.relaxation = var['relaxation']
         self.rep_radius = var['repulsion_radius']
         self.rep_int = var['repulsion_intensity']
-        self.noise_intensity = var['noise_intensity']
+        self.noise_intensity = var['hjb_params']['sigma']
         self.des_v = var['des_v']
         
         self.agents = np.empty(self.N,dtype=object)
@@ -376,24 +375,15 @@ class ped:
     def wall_repulsion(self,repulsion_radius, repulsion_intensity,X,Y,V):
         
         x,y = self.position()
-        
-        door = self.look_target()
-        
-        x,y = self.position()
-        
+    
         d = np.sqrt((X-x)**2 + (Y-y)**2)
         
         ind = np.unravel_index(np.argmin(d + V*10e10), d.shape)
         
-        door = self.look_target()
-        
         if d[ind] < repulsion_radius:
             rep = -np.array((x - X[ind],y-Y[ind]),dtype = float)
-            if self.distance(door[0],door[1]) < door[2] + door[3]:
-                attr = np.array((x - door[0],y-door[1]),dtype = float)
-                return repulsion_intensity* (rep/d[ind] + attr)
-            else: 
-                return repulsion_intensity*(rep/d[ind])
+            return repulsion_intensity* (rep/d[ind])
+        
         else:
             return np.array((0,0),dtype = float)
                     

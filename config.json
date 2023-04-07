@@ -10,21 +10,18 @@
 "doors":{
 	"door_1": [1.5, 6, 1.5, 0 ,1],
 	"door_2": [8.5, 6, 1.5, 0 ,1]
-	
     },
 
 "walls":{
 	"wall_1": [5,4, 6.5,0.5],
 	"wall_2": [2,2,0.5,4.5],
 	"wall_3": [8,2,0.5,4.5]
-	
     },
     
 "holes":{
     "hole_1":[5,4,1,0.5],
     "hole_2":[2,2,0.5,1],
     "hole_3":[8,2,0.5,1]
-    
 },
 
 "cylinders":{
@@ -32,8 +29,7 @@
     },
 
 "repulsion_radius": 0.5,
-"repulsion_intensity": -2,
-"noise_intensity": 0.05,	
+"repulsion_intensity": -1,
 "des_v": 1,
 "relaxation": 0.1,
 "sigma_convolution": 0.5,
@@ -41,7 +37,7 @@
 "hjb_params":{
     "g": -0.1,
     "sigma": 0.5,
-    "mu": 1,
+    "mu": 3,
     "potential": -100
 }
 }
