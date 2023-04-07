@@ -90,18 +90,20 @@ class simulation:
         self.dt = var['dt']
         
         # Init population
-        self.N = var['N']
-        self.inside = var['N']
+        self.initial_density = var['initial_density']
+        self.initial_box = var['initial_box']
+        self.N = int(self.initial_density*(self.initial_box[1]-self.initial_box[0])* (self.initial_box[3]-self.initial_box[2]))
+        self.inside = self.N
          
         # Init pedestrians features
         self.relaxation = var['relaxation']
         self.rep_radius = var['repulsion_radius']
         self.rep_int = var['repulsion_intensity']
-        self.noise_intensity = var['noise_intensity']
+        self.noise_intensity = var['hjb_params']['sigma']
         self.des_v = var['des_v']
-        self.initial_box = var['initial_box']
+        
         self.agents = np.empty(self.N,dtype=object)
-        self.initial_density = var['hjb_params']['initial_density']
+     
         self.m_0 = np.zeros((self.Ny,self.Nx),dtype = float) 
             
         self.type = mode
@@ -138,9 +140,11 @@ class simulation:
         if self.type == 'abm':
         
             if mode == 'scatter':
-                scat_x = [self.agents[i].position()[0] for i in range(self.N) if self.agents[i].status]
-                scat_y = [self.agents[i].position()[1] for i in range(self.N) if self.agents[i].status]
-                plt.scatter(scat_x,scat_y,color = 'blue')
+                for i in range(self.N): 
+                    if self.agents[i].status:
+                        c = self.agents[i].position()
+                        C = plt.Circle(c,radius = 0.2)
+                        plt.gca().add_artist(C)
              
             if mode == 'arrows':
                 if self.inside > 0:
@@ -191,7 +195,7 @@ class simulation:
                         repulsion = repulsion + np.array(agent.compute_repulsion(self.agents[j].position(), self.rep_radius, self.rep_int),dtype = float)
                         
                 # Compute repulsion from walls
-                wall_repulsion = np.array(agent.wall_repulsion(self.rep_radius, self.rep_int),dtype=float)
+                wall_repulsion = np.array(agent.wall_repulsion(self.rep_radius, self.rep_int,self.X_opt,self.Y_opt,self.V),dtype=float)
                 
                 # Compute current velocity with random perturbation and repulsion
                 current_velocity = agent.velocity() + np.random.uniform(-self.noise_intensity, self.noise_intensity,2) + repulsion + wall_repulsion 
@@ -356,27 +360,29 @@ class ped:
             rep = np.array(((repulsion_intensity * (repulsion_radius - distance)) / distance )* rep_v,dtype = float)
         return rep
         
-    def wall_repulsion(self,repulsion_radius, repulsion_intensity):
-        
-        wall_repulsion = np.array((0, 0),dtype = float)
+    def wall_repulsion(self,repulsion_radius, repulsion_intensity,X,Y,V):
         
         x,y = self.position()
         
         door = self.look_target()
-
-        if x < repulsion_radius and abs(y-door[1]) > door[3]/2:
-            wall_repulsion += -repulsion_intensity*(repulsion_radius - x) / repulsion_radius * np.array((1, 0))
-            
-        elif x > self.room_length - repulsion_radius and abs(y-door[1]) > door[3]/2:
-            wall_repulsion += -repulsion_intensity*(repulsion_radius - (self.room_length - x)) / repulsion_radius * np.array((-1, 0))
-            
-        if y < repulsion_radius and abs(x-door[0]) > door[2]/2:
-            wall_repulsion += -repulsion_intensity*(repulsion_radius - y) / repulsion_radius * np.array((0, 1))
-            
-        elif y > self.room_height - repulsion_radius and abs(x-door[0]) > door[2]/2:
-            wall_repulsion += -repulsion_intensity*(repulsion_radius - (self.room_height - y)) / repulsion_radius * np.array((0, -1))
-            
-        return wall_repulsion
+        
+        x,y = self.position()
+        
+        d = np.sqrt((X-x)**2 + (Y-y)**2)
+        
+        ind = np.unravel_index(np.argmin(d + V*10e10), d.shape)
+        
+        door = self.look_target()
+        
+        if d[ind] < repulsion_radius:
+            rep = -np.array((x - X[ind],y-Y[ind]),dtype = float)
+            if self.distance(door[0],door[1]) < door[2] + door[3]:
+                attr = np.array((x - door[0],y-door[1]),dtype = float)
+                return repulsion_intensity* (rep/d[ind] + attr/self.distance(door[0],door[1]))
+            else: 
+                return repulsion_intensity*(rep/d[ind])
+        else:
+            return np.array((0,0),dtype = float)
                     
     def draw_trajectory(self):
         traj = np.array(self.traj)
@@ -428,7 +434,7 @@ class optimal_trajectories:
         
         self.V = np.zeros((self.Ny,self.Nx)) + self.pot
         self.V[1:-1,1:-1] = 0
-        self.lim = 10e-6
+        self.lim = 10e-8
         
         for walls in var['walls']:
             wall = var['walls'][walls]

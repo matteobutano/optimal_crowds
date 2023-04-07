@@ -1,7 +1,6 @@
 {
-
-"N": 50,
-"dt": 0.01,
+"initial_density": 1,
+"dt": 0.05,
 "room_length": 10,
 "room_height": 6,
 "Nx": 50,
@@ -44,8 +43,7 @@
     "g": -0.05,
     "sigma": 0.35,
     "mu": 1,
-    "potential": -300,
-    "initial_density": 1
+    "potential": -300
 }
 }
 
