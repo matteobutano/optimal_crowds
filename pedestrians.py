@@ -1,3 +1,9 @@
+# author Matteo Butano
+# email: matteo.butano@universite-paris-saclay.fr
+# institution: CNRS, Université Paris-Saclay
+
+# Modules are imported 
+
 import numpy as np
 import matplotlib.pyplot as plt
 
