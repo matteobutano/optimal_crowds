@@ -6,10 +6,10 @@
 "sigma_convolution": 0.5,
 
 "hjb_params":{
-    "g": -0.1,
+    "g": -0.005,
     "sigma": 0.5,
-    "mu": 2.5,
-    "potential": -300
+    "mu": 3,
+    "potential": -200
 }
 }
 

@@ -1,6 +1,6 @@
 # author Matteo Butano
 # email: matteo.butano@universite-paris-saclay.fr
-# institution: CNRS, Université Paris-Saclay
+# institution: CNRS, Université Paris-Saclay, LPTMS
 
 # Modules are imported 
 
@@ -142,7 +142,7 @@ class simulation:
         # We create the object containing the optimal trajectories for the abm 
         # and also the one able to compute the mfg
         
-        self.optimal = optimals.optimal_trajectories(room,T)
+        self.optimal = optimals.optimals(room,T)
         
         # Finally, depending on the mode of the simulation, we initialize the crowd 
         # both for the abm and the mfg
@@ -336,7 +336,8 @@ class simulation:
         else:
             return times
         
-    # The 'initial_position' method 
+    # The 'initial_position' method extracts the initial position of each agent
+    # of the simulation and provides a list with all tuples 
             
     def initial_positions(self):
         xs = np.empty(self.N,dtype = float)
@@ -346,24 +347,47 @@ class simulation:
             ys[i] = agent.initial_position[1]
         return xs,ys
 
+    # The 'run' methods makes the simulation evolve depending on the selected mode. 
+    # In 'abm' mode, it applies a step of given time-step until all agents have exited 
+    # the room or until the simulation time is lower than the prescribed one. This 
+    # is because the optimal velocities are only computed up to the terminal time T.
+    
     def run(self, verbose = True, draw = False, mode = 'scatter'):
         
-        if self.type == 'abm':
+        # In 'abm', the simulation is updated one step at the time, 
+        # following the rules of the 'step' method
         
-            while (self.inside > 0) & (self.time < self.T):    
+        if self.type == 'abm':
+            
+            while (self.inside > 0) & (self.time < self.T): 
+                
                 self.step(self.dt,verbose = verbose)
+                
+                # Draw current state of the simulation 
+                
                 if draw:
                     self.draw(mode)
                     plt.show()
+                    
+            # Print evacuation status
+            
             if self.inside == 0:
                 print('Evacuation complete!')
             else:
                 print('Evacuation failed!')
-            
+          
+        # In 'mfg' mode a the Nash equillibrium of the system is reached
+        # by cycling over the solutions of the Cole-Hopf version of HJB and
+        # KFP equations. 
+        
         elif self.type == 'mfg':
             
             self.optimal.mean_field_game(self.m_0,draw = draw,verbose=verbose)
-                
+       
+    # The 'gaussian_density' method computes the gaussian convolution of the agents
+    # positions. Each position is the center of a gaussian with standard deviation
+    # given by the 'sigma_convolution' paramter.      
+    
     def gaussian_density(self,sigma,Nx,Ny):
         
         dx = self.room_length/(Nx)
@@ -376,6 +400,7 @@ class simulation:
         Y = np.flip(Y[:-1,:-1] + dy/2,axis = 0)
         d = np.zeros((Ny,Nx))
         count = 0
+        
         for agent in self.agents:
             if agent.status:
                 count+=1
@@ -385,4 +410,19 @@ class simulation:
                 c_y = Y - y_agent
                 C = np.sqrt(4*np.pi**2*sigma**2)
                 d += np.exp(-(c_x**2 + c_y**2)/(2*sigma**2))/C 
+                
         return d
+    
+    def draw_final_trajectories(self):
+        
+        plt.figure(figsize = (self.room_length,self.room_height))
+        
+        for i in range(self.N):
+            self.agents[i].draw_trajectory()
+        
+        plt.imshow(np.flip(self.V,axis = 0),extent=[0,self.room_length,0,self.room_height])
+        plt.xlim([0,self.room_length])
+        plt.ylim([0,self.room_height])
+        
+        plt.show()
+        
