@@ -129,16 +129,6 @@ class simulation:
         self.noise_intensity = var_config['hjb_params']['sigma']
         self.des_v = var_config['des_v']
         
-        # Here the initial population is created and placed in the room
-        
-        self.initial_density = var_room['initial_density']
-        self.initial_box = var_room['initial_box']
-        
-        # The number of agents of the abm is determined from the initial average density 
-        
-        self.N = int(self.initial_density*(self.initial_box[1]-self.initial_box[0])* (self.initial_box[3]-self.initial_box[2]))
-        self.inside = self.N
-        
         # We create the object containing the optimal trajectories for the abm 
         # and also the one able to compute the mfg
         
@@ -147,38 +137,54 @@ class simulation:
         # Finally, depending on the mode of the simulation, we initialize the crowd 
         # both for the abm and the mfg
         
+        N = 0
+        self.agents =[]
+        self.m_0 = np.zeros((self.Ny,self.Nx),dtype = float)
+        
         if self.type == 'abm':
-           self.agents = np.empty(self.N,dtype=object)
-           xs = np.random.uniform(self.initial_box[0], self.initial_box[1],self.N)
-           ys = np.random.uniform(self.initial_box[2],self.initial_box[3],self.N)
-           for i in range(self.N):
+            for boxes in var_room['initial_boxes']:
+                
+                box = var_room['initial_boxes'][boxes]
+                
+                loc_N = int(box[4]*(box[1]-box[0])* (box[3]-box[2]))
+                
+                N += loc_N
                
-               # Here we create every single agent using the pedestrian module, 
-               # each agent is therefore and instance of the object pedestrian,
-               # which allows us to monitor the various parameters of each agent's
-               # dynamics, such as speed, position, direction, target, evacuation time etc.
+                xs = np.random.uniform(box[0],box[1],loc_N)
+                ys = np.random.uniform(box[2],box[3],loc_N)
+                
+                for i in range(loc_N):
+                    
+                    # Here we create every single agent using the pedestrian module, 
+                    # each agent is therefore and instance of the object pedestrian,
+                    # which allows us to monitor the various parameters of each agent's
+                    # dynamics, such as speed, position, direction, target, evacuation time etc.
+                   
+                    self.agents.append(pedestrians.ped(xs[i], ys[i], 0, 0, self.doors, self.room_length, self.room_height))
+            
+            self.N = N
+            self.inside = self.N
+            self.agents = np.array(self.agents, dtype = object)
                
-               self.agents[i] = pedestrians.ped(xs[i], ys[i], 0, 0, self.doors, self.room_length, self.room_height)
-               self.agents[i].choose_target()
-               
-           print('ABM simulation room created!')
+            print('ABM simulation room created!')
                      
-           self.optimal.compute_optimal_velocity()
+            self.optimal.compute_optimal_velocity()
         
         elif self.type =='mfg':
             
-           # Here the mfg density is created 
+            for boxes in var_room['initial_boxes']:
+                
+               box = var_room['initial_boxes'][boxes]
             
-           self.m_0 = np.zeros((self.Ny,self.Nx),dtype = float) 
-           x_min = self.initial_box[0]
-           x_max = self.initial_box[1]
-           y_min = self.initial_box[2]
-           y_max = self.initial_box[3]
-           X = self.X_opt
-           Y = self.Y_opt
-           self.m_0[((X > x_min) & (X < x_max)) * ((Y > y_min) & (Y < y_max))] = self.initial_density 
+               # Here the mfg density is created 
+                
+                
+               x_min, x_max, y_min, y_max, dens = box
+               X = self.X_opt
+               Y = self.Y_opt
+               self.m_0[((X > x_min) & (X < x_max)) * ((Y > y_min) & (Y < y_max))] = dens
         
-           print('MFG simulation room created!')
+            print('MFG simulation room created!')
         
     # The 'draw' method allows for visualisation of the simulation room
     
@@ -241,7 +247,7 @@ class simulation:
             
         elif self.type == 'mfg':
             
-            plt.pcolor(self.X_opt, self.Y_opt,self.m_0 + 2*self.initial_density*self.V/self.pot)
+            plt.pcolor(self.X_opt, self.Y_opt,self.m_0 + self.V/self.pot)
                     
     # The 'step' method puts together all the ingredients necessary to 
     # evolve each agent's position and status in the simulation

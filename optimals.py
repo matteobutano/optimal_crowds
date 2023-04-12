@@ -65,7 +65,6 @@ class optimals:
         self.u_0 = np.zeros((self.Ny,self.Nx),dtype = float)
         self.phi_0 =  np.zeros((self.Ny,self.Nx),dtype = float) + 1
         self.evacuator = np.zeros((self.Ny,self.Nx),dtype = float) + 1
-        self.initial_density = var_room['initial_density']
         
         # Create potential V
         
@@ -248,6 +247,8 @@ class optimals:
         
         early_stop = 0
         
+       
+        
         while (err > 10e-4) & (early_stop < 5):
             
             sol_phi = solve_ivp(phi, t_span_phi, self.phi_0, 
@@ -269,8 +270,8 @@ class optimals:
                     
             err = new_err 
             
-            if verbose:
-                print('Epoch {}, error = {:.4f}'.format(epoch,err))
+            
+            print('Epoch {}, error = {:.4f}'.format(epoch,err))
                 
             # The update of the density is done as a mix between the old and the new m
             
@@ -289,7 +290,7 @@ class optimals:
                 plt.figure(figsize = (self.room_length,self.room_height))
                 plt.imshow(np.flip(m_total[:,:,t] + self.V/self.pot,axis = 0),extent=[0,self.room_length,0,self.room_height])
                 plt.title(t)
-                plt.clim([0,self.initial_density])
+                plt.clim([0,4])
                 plt.colorbar()
                 plt.title('Nash equilibrium, t = {:.2f}s'.format(dt*t))
                 
