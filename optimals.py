@@ -35,11 +35,13 @@ class optimals:
         
         # A grid is defined for the MFG equations
         
-        self.Nx = var_room['Nx']
-        self.Ny = var_room['Ny']
+        self.grid_step = var_config['grid_step']
         
-        self.dx = self.room_length/(self.Nx-1)
-        self.dy = self.room_height/(self.Ny-1)
+        self.Nx = int(self.room_length//self.grid_step + 1)
+        self.Ny = int(self.room_height//self.grid_step + 1)
+        
+        self.dx = self.grid_step
+        self.dy = self.grid_step
 
         self.X_opt, self.Y_opt = np.meshgrid(np.linspace(0,self.room_length,self.Nx)
                                              ,np.linspace(0,self.room_height,self.Ny))
@@ -53,7 +55,7 @@ class optimals:
        
         # Time discretization 
         
-        self.dt = var_room['dt']
+        self.dt = var_config['dt']
         self.T = T
         self.nt_opt = round(self.T/self.dt)
             

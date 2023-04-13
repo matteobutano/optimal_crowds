@@ -1,4 +1,8 @@
 {
+
+"dt": 0.05,
+"grid_step":0.1,
+
 "repulsion_radius": 0.5,
 "repulsion_intensity": -1,
 "des_v": 1,
