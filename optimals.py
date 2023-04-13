@@ -132,11 +132,11 @@ class optimals:
                 plt.quiver(self.X_opt[1:-1,1:-1],self.Y_opt[1:-1,1:-1],self.vx_opt[i],self.vy_opt[i])
             else:
                 plt.plot()
-                plt.xlim([0,self.room_length])
-                plt.ylim([0,self.room_height])
-                title = 't = {:.2f}s'.format(i*self.dt)
-                plt.title(title)
-                plt.show()
+            plt.xlim([0,self.room_length])
+            plt.ylim([0,self.room_height])
+            title = 't = {:.2f}s'.format(i*self.dt)
+            plt.title(title)
+            plt.show()
         
     # This method performs the self consistence loop to reach the Nash equilibrium 
     # of the Mean-Field Game system used to describe the evacuation 

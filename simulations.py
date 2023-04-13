@@ -150,8 +150,8 @@ class simulation:
                 
                 N += loc_N
                
-                xs = np.random.uniform(box[0],box[1],loc_N)
-                ys = np.random.uniform(box[2],box[3],loc_N)
+                xs = np.random.uniform(box[0] - box[2]/2,box[0] + box[2]/2,loc_N)
+                ys = np.random.uniform(box[1] - box[3]/2,box[1] + box[3]/2,loc_N)
                 
                 for i in range(loc_N):
                     
@@ -176,10 +176,14 @@ class simulation:
                 
                box = var_room['initial_boxes'][boxes]
             
-               # Here the mfg density is created 
+               # Here the mfg density is created  
                 
-                
-               x_min, x_max, y_min, y_max, dens = box
+               x_min = box[0] - box[2]/2
+               x_max = box[0] + box[2]/2
+               y_min = box[1] - box[3]/2
+               y_max = box[1] + box[3]/2
+               dens = box[4]
+               
                X = self.X_opt
                Y = self.Y_opt
                self.m_0[((X > x_min) & (X < x_max)) * ((Y > y_min) & (Y < y_max))] = dens
