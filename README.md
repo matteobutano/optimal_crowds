@@ -29,6 +29,6 @@ In the directory where you cloned the 'optimal_control' repository, create a pyt
 
 ### Final notice
 
-I hope this code can help you simulate your favourite configurations. However, please note that this is still an early stage, beta version and sometimes strange behavior of the agents could be observed. Usually, for the ABM when T is too small, agents may stand still around their initial position because they predict they won't have enough time to exit the room. In those case, try increasing T. For the MFG, sometimes the self-consistence cycle can't converge, and either the error blows up or the early stopping criterion is reached. 
+I hope this code can help you simulate your favourite configurations. However, please note that this is still an early stage, beta version and sometimes strange behavior could be observed. Usually, this happens when T is too small. In this case ABM agents may stand still around their initial position because they predict they won't have enough time to exit the room, and the MFG may not reach convergence due to part of the density trying to breach through walls. A value of T = 50 is usually large enough for rooms around 50m², however try increasing T if any of the aforementioned bugs show up. 
 
 Please feel free to raise any issues, pull requests and signal bugs, as this would greatly help the maintenance and improving of the code. 
