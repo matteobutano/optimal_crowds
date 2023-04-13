@@ -33,4 +33,4 @@ In the directory where you cloned the 'optimal_control' repository, create a pyt
 
 I hope this code can serve you helping you simulate your favourite configurations. However, please note that this is still early stage, beta version and sometimes strange behaviors of the agents could be observed. Usually, for the ABM when the allowed simulation time is too small, agents close to the door will try pass through the wall, because they really want to get to the exit, or, agents would stand still around their initial position because they predict they won't have enough time to exit the room. In those case, try augmentint T, the simulation final time. For the MFG, sometimes the self-consistence cycle can't converge, and either the error blows up or the early stopping criterion is reached. 
 
-Please feel free to raise any issues, pull requests, signal bugs and configurations that the algorithms can't get right. 
+Please feel free to raise any issues, pull requests and signal bugs. 
