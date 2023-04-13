@@ -16,7 +16,7 @@ In the 'rooms' folder, you will place the .json files containing all the informa
 - doors: the target areas of pedestrians' motion. Each door is an array telling in order: the door's center's x coordinate, y coordinate, horizontal width, vertical width
 - walls: rectangular obstacles placed in the simulation room. Each wall is an array telling in order: the wall's center's x coordinate, y coordinate, horizontal width, vertical width 
 - holes: openings in walls. Each hole is an array telling in order: the the hole's center's x coordinate, y coordinate, horizontal width, vertical width 
--cylinders: cylindrical obstacles in the simulation room. Each cylinder is an array telling in order: the cylinder's center's x coordinate, y coordinate, the cylinder radius
+- cylinders: cylindrical obstacles in the simulation room. Each cylinder is an array telling in order: the cylinder's center's x coordinate, y coordinate, the cylinder radius
 
 ### How to run your first simulation 
 
