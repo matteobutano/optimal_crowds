@@ -24,7 +24,7 @@ In the directory where you cloned the 'optimal_control' repository, create a pyt
 - Import the simulation module 'from optimal_crowds import simulations'.
 - Create the simulation room 'simu = simulations.simulation(room, mode, T)', where: *room*, must be a string with the name without extension of the room's configuration file saved in you 'rooms' folder; *mode* must be the string 'abm' if you want the ABM, or the string 'mfg' if you want the MFG; *T* must be a float determining the max time you allow agents to exit the simulation room.
 - Visualize the initial configuration 'simu.draw()'.
-- Execute the simulation 'simu.run(draw, verbose)', where: *draw* must be boolean.If True the simulation is plotted at each time step; *verbose* must be a boolean. If True information about the ABM evacuation, or the convergence of the self consistency cycle for the MFG is displayed.
+- Execute the simulation 'simu.run(draw, verbose)', where: *draw* must be boolean. If True the simulation is plotted at each time step; *verbose* must be a boolean. If True information about the ABM evacuation, or the convergence of the self consistency cycle for the MFG is displayed.
 - Only for the ABM simulation, use 'simu.draw_final_trajectories()' to display the complete trajectory of each agent at the end of the evacuation. 
 
 ### Final notice
