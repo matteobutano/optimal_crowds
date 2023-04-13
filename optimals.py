@@ -51,7 +51,7 @@ class optimals:
         self.g = var_config['hjb_params']['g']
         self.sigma = var_config['hjb_params']['sigma']
         self.mu = var_config['hjb_params']['mu']
-        self.pot = var_config['hjb_params']['potential']
+        self.pot = var_config['hjb_params']['wall_potential']
        
         # Time discretization 
         
@@ -76,7 +76,7 @@ class optimals:
         
         # Read room 
         
-        self.doors = np.empty((len(var_room['doors']),5))
+        self.doors = np.empty((len(var_room['doors']),4))
         for i,door in enumerate(var_room['doors']):
             self.doors[i,:] = np.array(var_room['doors'][str(door)])
         
@@ -86,7 +86,6 @@ class optimals:
             mask_X = abs(self.X_opt-wall[0]) < wall[2]/2
             mask_Y = abs(self.Y_opt-wall[1]) < wall[3]/2
            
-            
             V_temp = np.zeros((self.Ny,self.Nx))
             
             V_temp[mask_X*mask_Y] = self.pot
@@ -119,7 +118,7 @@ class optimals:
             door_Y = abs(self.Y_opt - door[1]) < door[3]/2
             
             self.evacuator[door_X*door_Y] = 0
-            self.V[door_X*door_Y] = door[4]
+            self.V[door_X*door_Y] = var_config['hjb_params']['door_potential']
             
         self.phi_0 = self.phi_0.reshape(self.Nx*self.Ny)
         

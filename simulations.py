@@ -67,7 +67,7 @@ class simulation:
         # as the potential representing the interactions with the 
         # environment in the MFG and the repulsive walls of the abm
         
-        self.pot = var_config['hjb_params']['potential']
+        self.pot = var_config['hjb_params']['wall_potential']
         self.V = np.zeros((self.Ny,self.Nx)) + self.pot
         self.V[1:-1,1:-1] = 0
         self.lim = 10e-6
@@ -101,7 +101,7 @@ class simulation:
         
         self.V = self.pot *(self.V <= self.pot)  
         
-        self.doors = np.empty((len(var_room['doors']),5))
+        self.doors = np.empty((len(var_room['doors']),4))
         for i,door in enumerate(var_room['doors']):
             self.doors[i,:] = np.array(var_room['doors'][str(door)])
         
@@ -112,7 +112,7 @@ class simulation:
             door_Y = abs(self.Y_opt - door[1]) < door[3]/2
            
             self.evacuator[door_X*door_Y] = 0
-            self.V[door_X*door_Y] = door[4]
+            self.V[door_X*door_Y] = var_config['hjb_params']['door_potential']
             
         self.phi_0 = self.phi_0.reshape(self.Nx*self.Ny)
         

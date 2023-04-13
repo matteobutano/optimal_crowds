@@ -13,7 +13,8 @@
     "g": -0.005,
     "sigma": 0.5,
     "mu": 3,
-    "potential": -100
+    "wall_potential": -100,
+    "door_potential": 1
 }
 }
 
