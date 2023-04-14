@@ -1,6 +1,6 @@
 # Optimal Crowds 
 
-The optimal_crowds package helps you simulate the dynamics of a crowd of human beings moving through an environment towards an exit or a goal. The algorithm allows for  two methods of simulation, an Agent-Based Model (ABM) and a Mean-Field Game (MFG). To know more about the theory behind read the wiki! Once the room is set up, both methods can be chosen to perform the simulation.
+The optimal_crowds package helps you simulate the dynamics of a crowd of human beings moving through an environment towards an exit or a goal. The algorithm allows for  two methods of simulation, an optimal control theory powered Agent-Based Model (ABM) and a Mean-Field Game (MFG). To know more about the theory behind read the wiki! Once the room is set up, both methods can be chosen to perform the simulation.
 
 ### How to install
 
