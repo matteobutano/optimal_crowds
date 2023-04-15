@@ -10,7 +10,7 @@
 "sigma_convolution": 0.5,
 
 "hjb_params":{
-    "g": -0.005,
+    "g": -0.001,
     "sigma": 0.5,
     "mu": 3,
     "wall_potential": -100,

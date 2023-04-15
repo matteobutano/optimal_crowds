@@ -64,9 +64,7 @@ class optimals:
         self.vx_opt = np.empty((self.nt_opt-1,self.Ny-2,self.Nx-2))
         self.vy_opt = np.empty((self.nt_opt-1,self.Ny-2,self.Nx-2))
         
-        self.u_0 = np.zeros((self.Ny,self.Nx),dtype = float)
-        self.phi_0 =  np.zeros((self.Ny,self.Nx),dtype = float) + 1
-        self.evacuator = np.zeros((self.Ny,self.Nx),dtype = float) + 1
+        self.phi_T =  np.zeros((self.Ny,self.Nx),dtype = float) + 1
         
         # Create potential V
         
@@ -117,10 +115,9 @@ class optimals:
             door_X = abs(self.X_opt - door[0]) < door[2]/2
             door_Y = abs(self.Y_opt - door[1]) < door[3]/2
             
-            self.evacuator[door_X*door_Y] = 0
             self.V[door_X*door_Y] = var_config['hjb_params']['door_potential']
             
-        self.phi_0 = self.phi_0.reshape(self.Nx*self.Ny)
+        self.phi_T = self.phi_T.reshape(self.Nx*self.Ny)
         
     # The 'draw_optimal_velocities' method draws the velocities obtained 
     # by solving the HJB equation in the Cole-Hopf transformation. 
@@ -179,6 +176,8 @@ class optimals:
             phi_temp[1:-1,1:-1] = -0.5*self.sigma**2*lap -\
                 ((self.V+self.g*m_temp)*phi_temp[1:-1,1:-1])/(self.mu*self.sigma**2) 
             
+            phi_temp[1:-1,1:-1][self.V<0] = 0
+            
             return phi_temp[1:-1,1:-1].reshape(nx*ny)
         
         # Here we define the function that represents the FPE in the Cole-Hopf form
@@ -203,6 +202,8 @@ class optimals:
             gam_temp[1:-1,1:-1] = 0.5*self.sigma**2*lap +\
                 ((self.V + self.g*m_temp)*gam_temp[1:-1,1:-1])/(self.mu*self.sigma**2) 
                         
+            gam_temp[1:-1,1:-1][self.V<0] = 0
+            
             return gam_temp[1:-1,1:-1].reshape(nx*ny)
         
         print('Starting MFG!')
@@ -226,10 +227,14 @@ class optimals:
         
         method = 'RK45'
 
-        sol_phi = solve_ivp(phi, t_span_phi, self.phi_0,
+        sol_phi = solve_ivp(phi, t_span_phi, self.phi_T,
                             method = method,t_eval = t_events_phi, args =(np.zeros((ny,nx,nt)),dt))
-        sol_gam = solve_ivp(gam, t_span_gam, m_0.reshape(nx*ny)/sol_phi.y[:,-1],
-                            method = method,t_eval = t_events_gam, args =(m_0_total,dt))
+        
+        phi_0 = sol_phi.y[:,-1]*(sol_phi.y[:,-1] > self.lim) + self.lim*(sol_phi.y[:,-1] < self.lim)
+        gam_0 = m_0.reshape(nx*ny)/phi_0
+        
+        sol_gam = solve_ivp(gam, t_span_gam,gam_0,
+                            method = method,t_eval = t_events_gam, args =(np.zeros((ny,nx,nt)),dt))
 
         phi_total = np.flip(sol_phi.y.reshape((ny,nx,nt)),axis = 2)
         gam_total =  sol_gam.y.reshape((ny,nx,nt))
@@ -237,7 +242,7 @@ class optimals:
         # The density is then given as the product between phi and gamma
         
         m_total = phi_total*gam_total
-        
+       
         # We initialize the error for the consitence cycle
             
         err = 10e6
@@ -248,13 +253,15 @@ class optimals:
         
         early_stop = 0
         
-       
-        
         while (err > 10e-4) & (early_stop < 5):
             
-            sol_phi = solve_ivp(phi, t_span_phi, self.phi_0, 
+            sol_phi = solve_ivp(phi, t_span_phi, self.phi_T, 
                                 method = method,t_eval = t_events_phi, args =(m_total,dt))
-            sol_gam = solve_ivp(gam, t_span_gam, m_0.reshape(nx*ny)/sol_phi.y[:,-1], 
+            
+            phi_0 = sol_phi.y[:,-1]*(sol_phi.y[:,-1] > self.lim) + self.lim*(sol_phi.y[:,-1] < self.lim)
+            gam_0 = m_0.reshape(nx*ny)/phi_0
+            
+            sol_gam = solve_ivp(gam, t_span_gam, gam_0, 
                                 method = method,t_eval = t_events_gam, args =(m_total,dt))
             
             phi_total = np.flip(sol_phi.y.reshape((ny,nx,nt)),axis = 2)
@@ -271,7 +278,6 @@ class optimals:
                     
             err = new_err 
             
-            
             print('Epoch {}, error = {:.4f}'.format(epoch,err))
                 
             # The update of the density is done as a mix between the old and the new m
@@ -286,14 +292,14 @@ class optimals:
         
         if draw: 
             
-            for t in range(nt):
+            for i in np.arange(0,self.T + 1,1):
+                
+                t = int(i//self.dt) 
                 
                 plt.figure(figsize = (self.room_length,self.room_height))
                 plt.imshow(np.flip(m_total[:,:,t] + self.V/self.pot,axis = 0),extent=[0,self.room_length,0,self.room_height])
-                plt.title(t)
-                plt.clim([0,4])
                 plt.colorbar()
-                plt.title('Nash equilibrium, t = {:.2f}s'.format(dt*t))
+                plt.title('Nash equilibrium, t = {}s'.format(i))
                 
                 plt.show()
             
@@ -328,6 +334,8 @@ class optimals:
             
             phi_temp[1:-1,1:-1] = -0.5*self.sigma**2*lap -\
                 ((self.V)*phi_temp[1:-1,1:-1])/(self.mu*self.sigma**2)
+                
+            phi_temp[1:-1,1:-1][self.V<0] = 0
          
             return phi_temp[1:-1,1:-1].reshape(nx*ny)
         
@@ -353,14 +361,14 @@ class optimals:
             
             return vx/norm,vy/norm
         
-        phi_0 = self.phi_0
+        phi_T = self.phi_T
       
         # We choose the integration time span and the time discretization
        
         t_span = (self.T,0)
         t_events = np.linspace(self.T,0,self.nt_opt)
 
-        sol = solve_ivp(hjb, t_span, phi_0, method ='RK45',t_eval = t_events)
+        sol = solve_ivp(hjb, t_span, phi_T, method ='RK45',t_eval = t_events)
         
         # We create the floor field prescribing agents velocity 
         

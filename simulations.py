@@ -60,7 +60,7 @@ class simulation:
         # we will obstain the optimal trajectories
         
         self.u_0 = np.zeros((self.Ny,self.Nx),dtype = float)
-        self.phi_0 =  np.zeros((self.Ny,self.Nx),dtype = float)
+        self.phi_T =  np.zeros((self.Ny,self.Nx),dtype = float)
         self.evacuator = np.zeros((self.Ny,self.Nx),dtype = float) + 1
         
         # Here the walls are created, and they will be used both 
@@ -111,10 +111,9 @@ class simulation:
             door_X = abs(self.X_opt - door[0]) < door[2]/2
             door_Y = abs(self.Y_opt - door[1]) < door[3]/2
            
-            self.evacuator[door_X*door_Y] = 0
             self.V[door_X*door_Y] = var_config['hjb_params']['door_potential']
             
-        self.phi_0 = self.phi_0.reshape(self.Nx*self.Ny)
+        self.phi_T = self.phi_T.reshape(self.Nx*self.Ny)
         
         # Here the time discretization is defined
         
@@ -149,7 +148,7 @@ class simulation:
                 
                 box = var_room['initial_boxes'][boxes]
                 
-                loc_N = int(box[4]*(box[1]-box[0])* (box[3]-box[2]))
+                loc_N = int(box[4] * box[2] * box[3])
                 
                 N += loc_N
                
@@ -243,7 +242,7 @@ class simulation:
             # Where the gaussian convolution of the agents position is computed  
                 
                 d = self.gaussian_density(self.sigma_convolution, self.Nx, self.Ny)
-                plt.imshow(np.flip(self.V/self.pot,axis = 0) + d,extent=[0,self.room_length,0,self.room_height])
+                plt.imshow(np.flip(self.V[:-1,:-1]/self.pot,axis = 0) + d,extent=[0,self.room_length,0,self.room_height])
                 plt.xlim([0,self.room_length])
                 plt.ylim([0,self.room_height])
                 plt.colorbar()
@@ -411,7 +410,7 @@ class simulation:
         
         X = X[:-1,:-1] + dx/2
         Y = np.flip(Y[:-1,:-1] + dy/2,axis = 0)
-        d = np.zeros((Ny,Nx))
+        d = np.zeros((Ny-1,Nx-1))
         count = 0
         
         for agent in self.agents:
