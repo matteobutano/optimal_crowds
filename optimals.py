@@ -232,6 +232,7 @@ class optimals:
         
         phi_0 = sol_phi.y[:,-1]*(sol_phi.y[:,-1] > self.lim) + self.lim*(sol_phi.y[:,-1] < self.lim)
         gam_0 = m_0.reshape(nx*ny)/phi_0
+        gam_0[(self.V < 0).reshape(nx*ny)] = 0
         
         sol_gam = solve_ivp(gam, t_span_gam,gam_0,
                             method = method,t_eval = t_events_gam, args =(np.zeros((ny,nx,nt)),dt))
@@ -260,6 +261,7 @@ class optimals:
             
             phi_0 = sol_phi.y[:,-1]*(sol_phi.y[:,-1] > self.lim) + self.lim*(sol_phi.y[:,-1] < self.lim)
             gam_0 = m_0.reshape(nx*ny)/phi_0
+            gam_0[(self.V < 0).reshape(nx*ny)] = 0
             
             sol_gam = solve_ivp(gam, t_span_gam, gam_0, 
                                 method = method,t_eval = t_events_gam, args =(m_total,dt))
