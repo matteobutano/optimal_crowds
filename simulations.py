@@ -364,7 +364,7 @@ class simulation:
     # the room or until the simulation time is lower than the prescribed one. This 
     # is because the optimal velocities are only computed up to the terminal time T.
     
-    def run(self, verbose = True, draw = False, mode = 'scatter'):
+    def run(self, verbose = False, draw = False, mode = 'scatter'):
         
         # In 'abm', the simulation is updated one step at the time, 
         # following the rules of the 'step' method
