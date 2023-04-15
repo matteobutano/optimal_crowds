@@ -7,7 +7,7 @@ The optimal_crowds package helps you simulate the dynamics of a crowd of human b
 To correctly set up your package: 
 - Have the python modules numpy, matplotlib, json and scipy installed
 - Clone the repository inside a directory, you can do that by using the command 'git clone https://github.com/matteobutano/optimal_crowds' in you favorite bash terminal 
-- Inside the same directory create a folder named 'rooms', where you will place your room configurations 
+- Inside the directory where you cloned the repo, **not inside the repo itself**, create a folder named 'rooms', where you will place your room configurations 
 
 ### CREATE YOUR ROOM 🔨
 
