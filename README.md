@@ -1,15 +1,15 @@
-# Optimal Crowds 
+# Optimal Crowds :crystal_ball:
 
 The optimal_crowds package helps you simulate the dynamics of a crowd of human beings moving through an environment towards a target. The algorithm allows for  two methods of simulation, an optimal control theory powered Agent-Based Model (ABM) and a Mean-Field Game (MFG). To know more about the theory behind read the wiki! Once the room is set up, both methods can be chosen to perform the simulation.
 
-### How to install
+### INSTALL
 
 To correctly set up your package: 
 - Have the python modules numpy, matplotlib, json and scipy installed
 - Clone the repository inside a directory, you can do that by using the command 'git clone https://github.com/matteobutano/optimal_crowds' in you favorite bash terminal 
 - Inside the same directory create a folder named 'rooms', where you will place your room configurations 
 
-### How to create a room 
+### CREATE YOUR ROOM
 
 In the 'rooms' folder, you will place the .json files containing all the information about the configurations you wish to simulate. You can move the 'room_test.json' file from this repo to your 'rooms' folder and modify it. The main elements of the room configuration file are:
 - room_length and room_height: the extension along the x and y axes of the simulation room
@@ -19,7 +19,7 @@ In the 'rooms' folder, you will place the .json files containing all the informa
 - holes: openings in walls. Each hole is an array telling in order: the the hole's center's x coordinate, y coordinate, horizontal width, vertical width 
 - cylinders: cylindrical obstacles in the simulation room. Each cylinder is an array telling in order: the cylinder's center's x coordinate, y coordinate, the cylinder radius
 
-### How to run your first simulation 
+### START YOUR FIRST SIMULATION 
 
 In the directory where you cloned the 'optimal_control' repository, create a python script 'run.py' where you will:
 - Import the simulation module 'from optimal_crowds import simulations'.
@@ -28,7 +28,17 @@ In the directory where you cloned the 'optimal_control' repository, create a pyt
 - Execute the simulation 'simu.run(draw, verbose)', where: *draw* must be boolean. If True the simulation is plotted at each time step; *verbose* must be a boolean. If True information about the ABM evacuation, or the convergence of the self consistency cycle for the MFG is displayed.
 - Only for the ABM simulation, use 'simu.draw_final_trajectories()' to display the complete trajectory of each agent at the end of the evacuation. 
 
-### Final notice
+### CONTRIBUTE
+
+If you like what this does, feel free to improve upon code. Just follow these steps to contribute:
+
+1. Fork it
+2. Create your feature branch (git checkout -b my-new-feature)
+3. Commit your changes (git commit -am 'Add some feature')
+4. Push to the branch (git push origin my-new-feature)
+5. Issue a pull request
+
+### FINAL NOTICE
 
 I hope this code can help you simulate your favourite configurations. However, please note that this is still an early stage, beta version and sometimes strange behavior could be observed. Usually, this happens when T is too small. In this case ABM agents may stand still around their initial position because they predict they won't have enough time to exit the room, and the MFG may not reach convergence due to part of the density trying to breach through walls. A value of T = 50 is usually large enough for rooms around 50m², however try increasing T if any of the aforementioned bugs show up. 
 
