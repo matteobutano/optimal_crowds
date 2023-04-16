@@ -23,7 +23,7 @@ In the 'rooms' folder, you will place the .json files containing all the informa
 
 In the directory where you cloned the 'optimal_control' repository, create a python script 'run.py' with instructions:
 1. **'from optimal_crowds import simulations'**, to import the simulation module 
-2. **'simu = simulations.simulation(room, T)'**, to create the simulation room , where: *room*, must be a string with the name without extension of the room's configuration file saved in you 'rooms' folder; *T* must be a float determining the max time you allow agents to exit the simulation room
+2. **'simu = simulations.simulation(room, T)'**, to create the simulation room , where: *room*, must be a string with the name without extension of the room's configuration file saved in you 'rooms' folder; *T* must be a float determining the max time you allow agents to exit the simulation room. If T is too small, agents won't move from their initial positions; in that case, try increasing T. 
 3. **'simu.draw()'**, to visualize the initial configuration 
 4. **'simu.run(draw, verbose)'**, to execute the simulation , where: *draw* must be boolean. If True the simulation room and the agents are plotted at each time step; *verbose* must be a boolean. If True the simulation time in seconds and the number of exited agents are printed at each time step
 5. **'simu.draw_final_trajectories()'** to finally, plot the actual trajectory each agent followed to exit the simulation room using 
@@ -37,8 +37,3 @@ If you like what this does, feel free to improve upon code. Just follow these st
 3. Commit your changes (git commit -am 'Add some feature')
 4. Push to the branch (git push origin my-new-feature)
 5. Issue a pull request
-
-### FINAL NOTICE 🆘
-
-I hope this code can help you simulate your favourite configurations. However, please note that this is still an early stage, beta version and sometimes strange behavior could be observed. Usually, this happens when T is too small. In this case ABM agents may stand still around their initial position because they predict they won't have enough time to exit the room. A value of T = 50 is usually large enough for rooms around 50m², however try increasing T if any of the aforementioned bugs show up. 
- 
