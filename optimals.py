@@ -10,13 +10,13 @@ import matplotlib.pyplot as plt
 import json
 
 # The 'optimals' class is used to solve the HJB equation giving the optimal
-# trajectories as per the cost functional cited in my pubblications. Moreover
-# we solve here the MFG and find the Nash equilibrium of the game.
+# trajectories as per the cost functional cited in my pubblications.
 
 class optimals:
     def __init__(self,room,T):
         
-        # The config.json contains the parameters of the abm and of the mfg system 
+        # The config.json contains the parameters of the abm agents and
+        # of the HJB equation used to guide their motion 
         
         with open('optimal_crowds/config.json') as f:
             var_config = json.loads(f.read())
@@ -48,7 +48,6 @@ class optimals:
         
         # Read optimization parameters
         
-        self.g = var_config['hjb_params']['g']
         self.sigma = var_config['hjb_params']['sigma']
         self.mu = var_config['hjb_params']['mu']
         self.pot = var_config['hjb_params']['wall_potential']
@@ -122,7 +121,7 @@ class optimals:
     # The 'draw_optimal_velocities' method draws the velocities obtained 
     # by solving the HJB equation in the Cole-Hopf transformation. 
        
-    def draw_optimal_velocity(self,mode):
+    def draw_optimal_velocity(self):
         
         for i in range(self.nt_opt-1):
             
@@ -135,177 +134,6 @@ class optimals:
             title = 't = {:.2f}s'.format(i*self.dt)
             plt.title(title)
             plt.show()
-        
-    # This method performs the self consistence loop to reach the Nash equilibrium 
-    # of the Mean-Field Game system used to describe the evacuation 
-            
-    def mean_field_game(self,m_0,draw, verbose = False):
-        
-        nx = self.Nx
-        ny = self.Ny
-        dx = self.dx
-        dy = self.dy
-        T = self.T
-        dt = self.dt
-        nt = int( T//dt + 1)
-        
-        # We define the function representing the HJB equation for phi
-        
-        def phi(t,phi,m,dt):
-            
-            i = int(np.round(t,2)//dt)
-            
-            m_temp = m[:,:,i]
-            
-            phi_temp = np.empty((ny+2,nx+2))
-            phi_temp[1:-1,1:-1] = phi.reshape(ny,nx).copy()
-            
-            # We impose Neumann bc for phi
-            
-            phi_temp[0,:] = phi_temp[2,:] 
-            phi_temp[-1,:] = phi_temp[-3,:]
-            phi_temp[:,-1] =  phi_temp[:,-3] 
-            phi_temp[:,0]  =  phi_temp[:,2]  
-            
-            lap = (phi_temp[:-2,1:-1] + phi_temp[2:,1:-1] + \
-                              phi_temp[1:-1,:-2] + phi_temp[1:-1,2:] - \
-                              4*phi_temp[1:-1,1:-1])/(dx*dy)
-            
-            # Here the HJB  equation is returned
-                
-            phi_temp[1:-1,1:-1] = -0.5*self.sigma**2*lap -\
-                ((self.V+self.g*m_temp)*phi_temp[1:-1,1:-1])/(self.mu*self.sigma**2) 
-            
-            phi_temp[1:-1,1:-1][self.V<0] = 0
-            
-            return phi_temp[1:-1,1:-1].reshape(nx*ny)
-        
-        # Here we define the function that represents the FPE in the Cole-Hopf form
-        
-        def gam(t,gam,m,dt):
-            
-            i = int(np.round(t,2)//dt)
-            
-            m_temp = m[:,:,i]
-            
-            gam_temp = np.empty((ny+2,nx+2))
-            gam_temp[1:-1,1:-1] = gam.reshape(ny,nx).copy()
-            
-            gam_temp[0,:] = gam_temp[2,:] 
-            gam_temp[-1,:] = gam_temp[-3,:]
-            gam_temp[:,-1] =  gam_temp[:,-3] 
-            gam_temp[:,0]  =  gam_temp[:,2]  
-            
-            lap = (gam_temp[:-2,1:-1] + gam_temp[2:,1:-1] + gam_temp[1:-1,:-2] +\
-                   gam_temp[1:-1,2:] -4*gam_temp[1:-1,1:-1])/(dx*dy)
-                
-            gam_temp[1:-1,1:-1] = 0.5*self.sigma**2*lap +\
-                ((self.V + self.g*m_temp)*gam_temp[1:-1,1:-1])/(self.mu*self.sigma**2) 
-                        
-            gam_temp[1:-1,1:-1][self.V<0] = 0
-            
-            return gam_temp[1:-1,1:-1].reshape(nx*ny)
-        
-        print('Starting MFG!')
-        
-        # We define the integration time domain and the time steps at which we 
-        # store the solution 
-        
-        t_span_phi = (T,0)
-        t_span_gam = (0,T)
-        t_events_phi = np.linspace(T,0,nt)
-        t_events_gam = np.linspace(0,T,nt)
-        
-        # We initialize the density for the FPE
-        
-        m_0_total = np.zeros((ny,nx,nt))
-        m_0_total[:,:,0] = m_0
-        
-        # We first solve HJB for phi, then we use the solution at time t=0
-        # as initial condition for the FPE. We use the built-in routine 'solve_ivp' 
-        # of the scipy module, with method
-        
-        method = 'RK45'
-
-        sol_phi = solve_ivp(phi, t_span_phi, self.phi_T,
-                            method = method,t_eval = t_events_phi, args =(np.zeros((ny,nx,nt)),dt))
-        
-        phi_0 = sol_phi.y[:,-1]*(sol_phi.y[:,-1] > self.lim) + self.lim*(sol_phi.y[:,-1] < self.lim)
-        gam_0 = m_0.reshape(nx*ny)/phi_0
-        gam_0[(self.V < 0).reshape(nx*ny)] = 0
-        
-        sol_gam = solve_ivp(gam, t_span_gam,gam_0,
-                            method = method,t_eval = t_events_gam, args =(np.zeros((ny,nx,nt)),dt))
-
-        phi_total = np.flip(sol_phi.y.reshape((ny,nx,nt)),axis = 2)
-        gam_total =  sol_gam.y.reshape((ny,nx,nt))
-        
-        # The density is then given as the product between phi and gamma
-        
-        m_total = phi_total*gam_total
-       
-        # We initialize the error for the consitence cycle
-            
-        err = 10e6
-        epoch = 0
-        
-        # We define an early stop criterion, when the error is higher than
-        # the previous one for 5 consecutives times 
-        
-        early_stop = 0
-        
-        while (err > 10e-4) & (early_stop < 5):
-            
-            sol_phi = solve_ivp(phi, t_span_phi, self.phi_T, 
-                                method = method,t_eval = t_events_phi, args =(m_total,dt))
-            
-            phi_0 = sol_phi.y[:,-1]*(sol_phi.y[:,-1] > self.lim) + self.lim*(sol_phi.y[:,-1] < self.lim)
-            gam_0 = m_0.reshape(nx*ny)/phi_0
-            gam_0[(self.V < 0).reshape(nx*ny)] = 0
-            
-            sol_gam = solve_ivp(gam, t_span_gam, gam_0, 
-                                method = method,t_eval = t_events_gam, args =(m_total,dt))
-            
-            phi_total = np.flip(sol_phi.y.reshape((ny,nx,nt)),axis = 2)
-            gam_total =  sol_gam.y.reshape((ny,nx,nt))
-            
-            new_err = np.mean([(phi_total[:,:,i]*gam_total[:,:,i]-\
-                                   m_total[:,:,i])**2 for i in range(nt)])
-                
-            if new_err >= err:
-                early_stop+=1
-                
-            else:
-                early_stop = 0
-                    
-            err = new_err 
-            
-            print('Epoch {}, error = {:.4f}'.format(epoch,err))
-                
-            # The update of the density is done as a mix between the old and the new m
-            
-            m_total = 0.1*phi_total*gam_total + 0.9*m_total
-            
-            epoch+=1
-
-        m_total = phi_total*gam_total 
-        
-        # If this opted true the density is plotted at the end of the mfg cycle
-        
-        if draw: 
-            
-            for i in np.arange(0,self.T + 1,1):
-                
-                t = int(i//self.dt) 
-                
-                plt.figure(figsize = (self.room_length,self.room_height))
-                plt.imshow(np.flip(m_total[:,:,t] + self.V/self.pot,axis = 0),extent=[0,self.room_length,0,self.room_height])
-                plt.colorbar()
-                plt.title('Nash equilibrium, t = {}s'.format(i))
-                
-                plt.show()
-            
-        return m_total
     
     # The 'compute_optimal_velocity' method computes the HJB equation 
     # over the simulation room using the potential V to represent the walls

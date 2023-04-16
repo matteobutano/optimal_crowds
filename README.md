@@ -1,6 +1,6 @@
 # Optimal Crowds :crystal_ball:
 
-The optimal_crowds package helps you simulate the dynamics of a crowd of human beings moving through an environment towards a target. The algorithm allows for  two methods of simulation, an optimal control theory powered Agent-Based Model (ABM) and a Mean-Field Game (MFG). To know more about the theory behind read the wiki! Once the room is set up, both methods can be chosen to perform the simulation.
+The optimal_crowds package lets you simulate the dynamics of a crowd of human beings moving through an environment towards a target. Once the room is set up, a HJB equation is solved to find the optimal trajectories leading to the targets. The actual dynamics is then simulated using a Agent-Based Model where agents strive the follow the optimally chosen trajectories and avoid obstacles and other pedestrians via social-force interactions. 
 
 ### INSTALL 💻
 
@@ -21,12 +21,12 @@ In the 'rooms' folder, you will place the .json files containing all the informa
 
 ### START YOUR FIRST SIMULATION ▶️
 
-In the directory where you cloned the 'optimal_control' repository, create a python script 'run.py' where you will:
-1. Import the simulation module 'from optimal_crowds import simulations'.
-2. Create the simulation room 'simu = simulations.simulation(room, mode, T)', where: *room*, must be a string with the name without extension of the room's configuration file saved in you 'rooms' folder; *mode* must be the string 'abm' if you want the ABM, or the string 'mfg' if you want the MFG; *T* must be a float determining the max time you allow agents to exit the simulation room.
-3. Visualize the initial configuration 'simu.draw()'.
-4. Execute the simulation 'simu.run(draw, verbose)', where: *draw* must be boolean. If True the simulation is plotted at each time step; *verbose* must be a boolean. If True information about the ABM evacuation, or the convergence of the self consistency cycle for the MFG is displayed.
-5. Only for the ABM simulation, use 'simu.draw_final_trajectories()' to display the complete trajectory of each agent at the end of the evacuation. 
+In the directory where you cloned the 'optimal_control' repository, create a python script 'run.py' with instructions:
+1. **'from optimal_crowds import simulations'**, to import the simulation module 
+2. **'simu = simulations.simulation(room, T)'**, to create the simulation room , where: *room*, must be a string with the name without extension of the room's configuration file saved in you 'rooms' folder; *T* must be a float determining the max time you allow agents to exit the simulation room
+3. **'simu.draw()'**, to visualize the initial configuration 
+4. **'simu.run(draw, verbose)'**, to execute the simulation , where: *draw* must be boolean. If True the simulation room and the agents are plotted at each time step; *verbose* must be a boolean. If True the simulation time in seconds and the number of exited agents are printed at each time step
+5. **'simu.draw_final_trajectories()'** to finally, plot the actual trajectory each agent followed to exit the simulation room using 
 
 ### CONTRIBUTE 🏁
 
@@ -40,5 +40,5 @@ If you like what this does, feel free to improve upon code. Just follow these st
 
 ### FINAL NOTICE 🆘
 
-I hope this code can help you simulate your favourite configurations. However, please note that this is still an early stage, beta version and sometimes strange behavior could be observed. Usually, this happens when T is too small. In this case ABM agents may stand still around their initial position because they predict they won't have enough time to exit the room, and the MFG may not reach convergence due to part of the density trying to breach through walls. A value of T = 50 is usually large enough for rooms around 50m², however try increasing T if any of the aforementioned bugs show up. 
+I hope this code can help you simulate your favourite configurations. However, please note that this is still an early stage, beta version and sometimes strange behavior could be observed. Usually, this happens when T is too small. In this case ABM agents may stand still around their initial position because they predict they won't have enough time to exit the room. A value of T = 50 is usually large enough for rooms around 50m², however try increasing T if any of the aforementioned bugs show up. 
  

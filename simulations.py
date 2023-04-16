@@ -17,12 +17,11 @@ import json
 
 class simulation:
     
-    def __init__(self,room, mode,T = 10):
+    def __init__(self,room,T):
         
-        # The config.json contains the parameters of the abm and of the mfg system 
-        
-        self.type = mode
-        
+        # The config.json contains the parameters of the abm agents and
+        # of the HJB equation used to guide their motion 
+    
         with open('optimal_crowds/config.json') as f:
             var_config = json.loads(f.read())
         
@@ -59,9 +58,7 @@ class simulation:
         # value function, from which, solving the HJB equation, 
         # we will obstain the optimal trajectories
         
-        self.u_0 = np.zeros((self.Ny,self.Nx),dtype = float)
         self.phi_T =  np.zeros((self.Ny,self.Nx),dtype = float)
-        self.evacuator = np.zeros((self.Ny,self.Nx),dtype = float) + 1
         
         # Here the walls are created, and they will be used both 
         # as the potential representing the interactions with the 
@@ -143,117 +140,90 @@ class simulation:
         self.agents =[]
         self.m_0 = np.zeros((self.Ny,self.Nx),dtype = float)
         
-        if self.type == 'abm':
-            for boxes in var_room['initial_boxes']:
+       
+        for boxes in var_room['initial_boxes']:
                 
-                box = var_room['initial_boxes'][boxes]
+            box = var_room['initial_boxes'][boxes]
                 
-                loc_N = int(box[4] * box[2] * box[3])
+            loc_N = int(box[4] * box[2] * box[3])
+            
+            N += loc_N
+              
+            xs = np.random.uniform(box[0] - box[2]/2,box[0] + box[2]/2,loc_N)
+            ys = np.random.uniform(box[1] - box[3]/2,box[1] + box[3]/2,loc_N)
                 
-                N += loc_N
-               
-                xs = np.random.uniform(box[0] - box[2]/2,box[0] + box[2]/2,loc_N)
-                ys = np.random.uniform(box[1] - box[3]/2,box[1] + box[3]/2,loc_N)
-                
-                for i in range(loc_N):
+            for i in range(loc_N):
                     
-                    # Here we create every single agent using the pedestrian module, 
-                    # each agent is therefore and instance of the object pedestrian,
-                    # which allows us to monitor the various parameters of each agent's
-                    # dynamics, such as speed, position, direction, target, evacuation time etc.
+                # Here we create every single agent using the pedestrian module, 
+                # each agent is therefore and instance of the object pedestrian,
+                # which allows us to monitor the various parameters of each agent's
+                # dynamics, such as speed, position, direction, target, evacuation time etc.
                    
-                    self.agents.append(pedestrians.ped(xs[i], ys[i], 0, 0, self.doors, self.room_length, self.room_height))
+                self.agents.append(pedestrians.ped(xs[i], ys[i], 0, 0, self.doors, self.room_length, self.room_height))
             
-            self.N = N
-            self.inside = self.N
-            self.agents = np.array(self.agents, dtype = object)
+        self.N = N
+        self.inside = self.N
+        self.agents = np.array(self.agents, dtype = object)
                
-            print('ABM simulation room created!')
+        print('ABM simulation room created!')
                      
-            self.optimal.compute_optimal_velocity()
-        
-        elif self.type =='mfg':
-            
-            for boxes in var_room['initial_boxes']:
-                
-               box = var_room['initial_boxes'][boxes]
-            
-               # Here the mfg density is created  
-                
-               x_min = box[0] - box[2]/2
-               x_max = box[0] + box[2]/2
-               y_min = box[1] - box[3]/2
-               y_max = box[1] + box[3]/2
-               dens = box[4]
-               
-               X = self.X_opt
-               Y = self.Y_opt
-               self.m_0[((X > x_min) & (X < x_max)) * ((Y > y_min) & (Y < y_max))] = dens
-        
-            print('MFG simulation room created!')
-        
     # The 'draw' method allows for visualisation of the simulation room
     
     def draw(self,mode = 'scatter'):
         
         plt.figure(figsize = (self.room_length,self.room_height))
         
-        if self.type == 'abm':
+        # This method draws a snapshot of the simulation room at each time step
+    
+        if mode == 'scatter':
             
-            # In abm mode, this method draws a snapshot of the simulation room at each time step
+        # Where each agent is represented by a dot of radius 0.2m
         
-            if mode == 'scatter':
-                
-            # Where each agent is represented by a dot of radius 0.2m
+            for i in range(self.N): 
+                if self.agents[i].status:
+                    c = self.agents[i].position()
+                    C = plt.Circle(c,radius = 0.2)
+                    plt.gca().add_artist(C)
+            plt.imshow(np.flip(self.V,axis = 0),extent=[0,self.room_length,0,self.room_height])
+            plt.xlim([0,self.room_length])
+            plt.ylim([0,self.room_height])
+            title = 't = {:.2f}s exit = {}/{}'.format(self.time,self.N - self.inside,self.N)
+            plt.title(title)
+            plt.show()
+         
+        if mode == 'arrows':
             
-                for i in range(self.N): 
-                    if self.agents[i].status:
-                        c = self.agents[i].position()
-                        C = plt.Circle(c,radius = 0.2)
-                        plt.gca().add_artist(C)
-                plt.imshow(np.flip(self.V,axis = 0),extent=[0,self.room_length,0,self.room_height])
-                plt.xlim([0,self.room_length])
-                plt.ylim([0,self.room_height])
-                title = 't = {:.2f}s exit = {}/{}'.format(self.time,self.N - self.inside,self.N)
-                plt.title(title)
-                plt.show()
-             
-            if mode == 'arrows':
-                
-            # Where each agent is represented by an arrow indicating its velocity 
+        # Where each agent is represented by an arrow indicating its velocity 
+        
+            if self.inside > 0:
+                scat_x = [self.agents[i].position()[0] for i in range(self.N) if self.agents[i].status]
+                scat_y = [self.agents[i].position()[1] for i in range(self.N) if self.agents[i].status]
+                scat_vx = [self.agents[i].velocity()[0] for i in range(self.N) if self.agents[i].status]
+                scat_vy = [self.agents[i].velocity()[1] for i in range(self.N) if self.agents[i].status]
+                plt.quiver(scat_x,scat_y,scat_vx, scat_vy,color = 'blue')
+            else:
+                plt.plot() 
+            plt.imshow(np.flip(self.V,axis = 0),extent=[0,self.room_length,0,self.room_height])
+            plt.xlim([0,self.room_length])
+            plt.ylim([0,self.room_height])
+            title = 't = {:.2f}s exit = {}/{}'.format(self.time,self.N - self.inside,self.N)
+            plt.title(title)
+            plt.show()
+        
+        if mode == 'density':
             
-                if self.inside > 0:
-                    scat_x = [self.agents[i].position()[0] for i in range(self.N) if self.agents[i].status]
-                    scat_y = [self.agents[i].position()[1] for i in range(self.N) if self.agents[i].status]
-                    scat_vx = [self.agents[i].velocity()[0] for i in range(self.N) if self.agents[i].status]
-                    scat_vy = [self.agents[i].velocity()[1] for i in range(self.N) if self.agents[i].status]
-                    plt.quiver(scat_x,scat_y,scat_vx, scat_vy,color = 'blue')
-                else:
-                    plt.plot() 
-                plt.imshow(np.flip(self.V,axis = 0),extent=[0,self.room_length,0,self.room_height])
-                plt.xlim([0,self.room_length])
-                plt.ylim([0,self.room_height])
-                title = 't = {:.2f}s exit = {}/{}'.format(self.time,self.N - self.inside,self.N)
-                plt.title(title)
-                plt.show()
+        # Where the gaussian convolution of the agents position is computed  
             
-            if mode == 'density':
-                
-            # Where the gaussian convolution of the agents position is computed  
-                
-                d = self.gaussian_density(self.sigma_convolution, self.Nx, self.Ny)
-                plt.imshow(np.flip(self.V[:-1,:-1]/self.pot,axis = 0) + d,extent=[0,self.room_length,0,self.room_height])
-                plt.xlim([0,self.room_length])
-                plt.ylim([0,self.room_height])
-                plt.colorbar()
-                plt.clim(0,2)
-                title = 't = {:.2f}s exit = {}/{}'.format(self.time,self.N - self.inside,self.N)
-                plt.title(title)
-                plt.show()
-            
-        elif self.type == 'mfg':
-            
-            plt.pcolor(self.X_opt, self.Y_opt,self.m_0 + self.V/self.pot)
+            d = self.gaussian_density(self.sigma_convolution, self.Nx, self.Ny)
+            plt.imshow(np.flip(self.V[:-1,:-1]/self.pot,axis = 0) + d,extent=[0,self.room_length,0,self.room_height])
+            plt.xlim([0,self.room_length])
+            plt.ylim([0,self.room_height])
+            plt.colorbar()
+            plt.clim(0,2)
+            title = 't = {:.2f}s exit = {}/{}'.format(self.time,self.N - self.inside,self.N)
+            plt.title(title)
+            plt.show()
+        
                     
     # The 'step' method puts together all the ingredients necessary to 
     # evolve each agent's position and status in the simulation
@@ -366,36 +336,30 @@ class simulation:
     
     def run(self, verbose = False, draw = False, mode = 'scatter'):
         
-        # In 'abm', the simulation is updated one step at the time, 
-        # following the rules of the 'step' method
+     # Before starting the abm simulation, we compute the optimal velocities 
+     # by solving the HJB representing obstacles and targets.
         
-        if self.type == 'abm':
+     self.optimal.compute_optimal_velocity()
             
-            while (self.inside > 0) & (self.time < self.T): 
+     while (self.inside > 0) & (self.time < self.T): 
+         # The abm simulation is updated one step at the time, 
+         # following the rules of the 'step' method
                 
-                self.step(self.dt,verbose = verbose)
+         self.step(self.dt,verbose = verbose)
                 
-                # Draw current state of the simulation 
+         # Draw current state of the simulation 
                 
-                if draw:
-                    self.draw(mode)
-                    plt.show()
+         if draw:
+             self.draw(mode)
+             plt.show()
                     
-            # Print evacuation status
+         # Print evacuation status
             
-            if self.inside == 0:
-                print('Evacuation complete!')
-            else:
-                print('Evacuation failed!')
-          
-        # In 'mfg' mode a the Nash equillibrium of the system is reached
-        # by cycling over the solutions of the Cole-Hopf version of HJB and
-        # KFP equations. 
-        
-        elif self.type == 'mfg':
-            
-            self.optimal.mean_field_game(self.m_0,draw = draw,verbose=verbose)
-       
+     if self.inside == 0:
+        print('Evacuation complete in {:.2f}s!'.format(self.time))
+     else:
+        print('Evacuation failed!')
+         
     # The 'gaussian_density' method computes the gaussian convolution of the agents
     # positions. Each position is the center of a gaussian with standard deviation
     # given by the 'sigma_convolution' paramter.      
@@ -424,6 +388,8 @@ class simulation:
                 d += np.exp(-(c_x**2 + c_y**2)/(2*sigma**2))/C 
                 
         return d
+    
+    # This method draws the trajectory of the agents at the end of the simulation
     
     def draw_final_trajectories(self):
         
