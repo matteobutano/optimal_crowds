@@ -11,7 +11,7 @@
 
 "hjb_params":{
     "sigma": 0.5,
-    "mu": 5,
+    "mu": 3,
     "wall_potential": -100,
     "door_potential": 1
 }
