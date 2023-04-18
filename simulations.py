@@ -215,7 +215,7 @@ class simulation:
         # Where the gaussian convolution of the agents position is computed  
             
             d = self.gaussian_density(self.sigma_convolution, self.Nx, self.Ny)
-            plt.imshow(np.flip(self.V[:-1,:-1]/self.pot,axis = 0) + d,extent=[0,self.room_length,0,self.room_height])
+            plt.imshow(np.flip(self.V/self.pot+ d,axis = 0) ,extent=[0,self.room_length,0,self.room_height])
             plt.xlim([0,self.room_length])
             plt.ylim([0,self.room_height])
             plt.colorbar()
@@ -365,16 +365,11 @@ class simulation:
     # given by the 'sigma_convolution' paramter.      
     
     def gaussian_density(self,sigma,Nx,Ny):
-        
-        dx = self.grid_step
-        dy = self.grid_step
-
+     
         X,Y = np.meshgrid(np.linspace(0,self.room_length,self.Nx), 
                           np.linspace(0,self.room_height,self.Ny))
         
-        X = X[:-1,:-1] + dx/2
-        Y = np.flip(Y[:-1,:-1] + dy/2,axis = 0)
-        d = np.zeros((Ny-1,Nx-1))
+        d = np.zeros((Ny,Nx))
         count = 0
         
         for agent in self.agents:
@@ -386,7 +381,9 @@ class simulation:
                 c_y = Y - y_agent
                 C = np.sqrt(4*np.pi**2*sigma**2)
                 d += np.exp(-(c_x**2 + c_y**2)/(2*sigma**2))/C 
-                
+            
+        d[self.V < 0] = 0
+        
         return d
     
     # This method draws the trajectory of the agents at the end of the simulation
