@@ -219,7 +219,6 @@ class simulation:
             plt.xlim([0,self.room_length])
             plt.ylim([0,self.room_height])
             plt.colorbar()
-            plt.clim(0,2)
             title = 't = {:.2f}s exit = {}/{}'.format(self.time,self.N - self.inside,self.N)
             plt.title(title)
             plt.show()
@@ -349,7 +348,7 @@ class simulation:
                 
          # Draw current state of the simulation 
                 
-         if draw:
+         if draw and (int((self.time*100)%10) == 0):
              self.draw(mode)
              plt.show()
                     
