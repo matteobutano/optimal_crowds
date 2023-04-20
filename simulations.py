@@ -256,7 +256,7 @@ class simulation:
                 repulsion = np.array((0, 0),dtype = float)
                 for j in range(self.N):
                     if self.agents[j].status and j != i:
-                        repulsion = repulsion + np.array(agent.compute_repulsion(self.agents[j].position(),self.agents[j].velocity(),(des_x,des_y)),dtype = float)
+                        repulsion = repulsion + np.array(agent.compute_repulsion(self.agents[j].position(),self.agents[j].velocity()),dtype = float)
                         
                 # We compute repulsion from walls
                 
@@ -356,7 +356,9 @@ class simulation:
                 
          # Draw current state of the simulation 
                 
-         if draw:
+         
+            
+         if draw and (int(self.time*100%10) == 0):
              self.draw(mode)
              plt.show()
                     

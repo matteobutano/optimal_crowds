@@ -107,7 +107,7 @@ class ped:
     
     # The following two methods compute the repulsion's intensity and direction. 
     
-    def compute_repulsion(self,pos_j,vel_j,v_0):
+    def compute_repulsion(self,pos_j,vel_j):
         
         def dis(pos_i, pos_j,vel,a,b):
             
@@ -122,48 +122,53 @@ class ped:
         # generalized centrifugal force model. 
         
         dot = lambda a,b: a[0]*b[0] + a[1]*b[1]
-        norm = lambda a: np.sqrt(dot(a,a))
 
         pos_i = self.position()
         vel_i = self.velocity()
         
-        a_i = self.a_min + self.tau_a * norm(vel_i)
-        b_i = self.b_max - (self.b_max - self.b_min)*norm(vel_i)/self.des_v
-        a_j = self.a_min + self.tau_a * norm(vel_j)
-        b_j = self.b_max - (self.b_max - self.b_min)*norm(vel_j)/self.des_v
+        a_i = self.a_min + self.tau_a * np.linalg.norm(vel_i)
+        b_i = self.b_max - (self.b_max - self.b_min)*np.minimum(np.linalg.norm(vel_i)/self.des_v,1)
+        a_j = self.a_min + self.tau_a * np.linalg.norm(vel_j)
+        b_j = self.b_max - (self.b_max - self.b_min)*np.minimum(np.linalg.norm(vel_j)/self.des_v,1)
         
         
         # First we compute the relative position of j
         
         R = pos_j - pos_i
-        e = R/norm(R)
+        e = R/np.linalg.norm(R)
         
         # Then we compute the relative velocity of j
         
-        v_rel = vel_i - vel_j
-        v_rel = 0.5*(dot(v_rel,e) + abs(dot(v_rel,e)))
+        v_rel = 0 
+        
+        if np.linalg.norm(vel_i - vel_j) > 0:
+    
+            v_rel = vel_i - vel_j
+            
+            v_rel = 0.5*(dot(v_rel,e) + abs(dot(v_rel,e)))
+            
+            v_rel = v_rel/np.linalg.norm(vel_i - vel_j)
         
         # We restrict the repulsion to what happens around the agent at 180°
         
         k = 0
         
-        if norm(vel_i) > 0:
-            k = 0.5*(dot(vel_i,e) + abs(dot(vel_i,e)))/norm(vel_i)
+        if np.linalg.norm(vel_i) > 0:
+            k = 0.5*(dot(vel_i,e) + abs(dot(vel_i,e)))/np.linalg.norm(vel_i)
         
         # Now we compute the distance between ellypses along direction of the centers
         
         d_i = dis(pos_i,pos_j,vel_i, a_i, b_i)
         d_j = dis(pos_j,pos_i,vel_j, a_j, b_j)
-        dist = norm(R) - d_i - d_j
-        
-        rep = -k*(norm(v_0)*self.eta + v_rel)**2/dist
+        dist = np.linalg.norm(R) -d_i-d_j 
+        rep = -self.eta*k*(v_rel)**2/dist
         
         # plt.arrow(pos_i[0], pos_i[1],rep*R[0], rep*R[1])
         # plt.xlim([0,5])
         # plt.ylim([0,5])
         # plt.show()
         
-        print('k = {:.2f}, dist =  {:.2f}, v_rel =  {:.2f}, rep =  {:.2f}'.format(k,dist,v_rel,rep))
+        # print('k = {:.2f}, dist =  {:.2f}, v_rel =  {:.2f}, rep =  {:.2f}'.format(k,dist,v_rel,rep))
         
         return rep*R
         
