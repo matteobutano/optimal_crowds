@@ -13,12 +13,21 @@ import matplotlib.pyplot as plt
 # environment agents are subjected to.  
   
 class ped:   
-    def __init__(self,x,y,vx,vy,doors,room_length,room_height):
+    def __init__(self,x,y,vx,vy,doors,room_length,room_height,des_v,a_min,tau_a,b_min,b_max,eta):
         
         # Parameters are passed as argument to allow greater agents personalization
         
         self.initial_position = np.array((x,y),dtype = float)
         self.initial_velocity = np.array((vx,vy),dtype = float)
+        
+        # Repulsion parameters 
+        
+        self.des_v = des_v
+        self.a_min = b_min
+        self.tau_a = tau_a
+        self.b_min = b_min
+        self.b_max = b_max
+        self.eta = eta
         
         # The status determines wether an agent is still inside the room or not
         
@@ -98,24 +107,65 @@ class ped:
     
     # The following two methods compute the repulsion's intensity and direction. 
     
-    def compute_repulsion(self,pos,repulsion_radius, repulsion_intensity):
+    def compute_repulsion(self,pos_j,vel_j,v_0):
         
-        # Given a position, (usually another agent's), the repulsion is computed as the 
-        # vector originating from that position directed to the agent's current pos
-        # centered in the agent's current position. 
-        
-        rep_v = -self.position() + pos
-        
-        distance = np.sqrt(rep_v[0]**2 + rep_v[1]**2)
-        
-        rep = np.array((0,0),dtype = float)
-        
-        # Repulsion from others kicks in only under a threshold
-        
-        if distance < repulsion_radius:
-            rep = np.array((repulsion_intensity / distance )* rep_v,dtype = float)
+        def dis(pos_i, pos_j,vel,a,b):
             
-        return rep
+            R = pos_j - pos_i
+            alpha = np.arctan2(R[1],R[0])
+            beta = np.arctan2(vel[1],vel[0])
+            q = (np.cos(alpha-beta)/a)**2 + (np.sin(alpha-beta)/b)**2
+
+            return 1/np.sqrt(q)
+        
+        # Given a position, (usually another agent's), the repulsion is computed
+        # generalized centrifugal force model. 
+        
+        dot = lambda a,b: a[0]*b[0] + a[1]*b[1]
+        norm = lambda a: np.sqrt(dot(a,a))
+
+        pos_i = self.position()
+        vel_i = self.velocity()
+        
+        a_i = self.a_min + self.tau_a * norm(vel_i)
+        b_i = self.b_max - (self.b_max - self.b_min)*norm(vel_i)/self.des_v
+        a_j = self.a_min + self.tau_a * norm(vel_j)
+        b_j = self.b_max - (self.b_max - self.b_min)*norm(vel_j)/self.des_v
+        
+        
+        # First we compute the relative position of j
+        
+        R = pos_j - pos_i
+        e = R/norm(R)
+        
+        # Then we compute the relative velocity of j
+        
+        v_rel = vel_i - vel_j
+        v_rel = 0.5*(dot(v_rel,e) + abs(dot(v_rel,e)))
+        
+        # We restrict the repulsion to what happens around the agent at 180°
+        
+        k = 0
+        
+        if norm(vel_i) > 0:
+            k = 0.5*(dot(vel_i,e) + abs(dot(vel_i,e)))/norm(vel_i)
+        
+        # Now we compute the distance between ellypses along direction of the centers
+        
+        d_i = dis(pos_i,pos_j,vel_i, a_i, b_i)
+        d_j = dis(pos_j,pos_i,vel_j, a_j, b_j)
+        dist = norm(R) - d_i - d_j
+        
+        rep = -k*(norm(v_0)*self.eta + v_rel)**2/dist
+        
+        # plt.arrow(pos_i[0], pos_i[1],rep*R[0], rep*R[1])
+        # plt.xlim([0,5])
+        # plt.ylim([0,5])
+        # plt.show()
+        
+        print('k = {:.2f}, dist =  {:.2f}, v_rel =  {:.2f}, rep =  {:.2f}'.format(k,dist,v_rel,rep))
+        
+        return rep*R
         
     def wall_repulsion(self,repulsion_radius, repulsion_intensity,X,Y,V):
         

@@ -6,8 +6,13 @@
 "repulsion_radius": 0.5,
 "repulsion_intensity": -1,
 "des_v": 1,
-"relaxation": 0.1,
+"relaxation": 0.5,
 "sigma_convolution": 0.5,
+"a_min": 0.1,
+"b_min": 0.05,
+"b_max": 0.08,
+"tau_a": 0.2,
+"eta": 0.01,
 
 "hjb_params":{
     "sigma": 0.5,

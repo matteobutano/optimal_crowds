@@ -127,6 +127,11 @@ class simulation:
         self.rep_int = var_config['repulsion_intensity']
         self.noise_intensity = var_config['hjb_params']['sigma']
         self.des_v = var_config['des_v']
+        self.a_min = var_config['b_min']
+        self.tau_a = var_config['tau_a']
+        self.b_min = var_config['b_min']
+        self.b_max = var_config['b_max']
+        self.eta = var_config['eta']
         
         # We create the object containing the optimal trajectories for the abm 
         # and also the one able to compute the mfg
@@ -159,7 +164,10 @@ class simulation:
                 # which allows us to monitor the various parameters of each agent's
                 # dynamics, such as speed, position, direction, target, evacuation time etc.
                    
-                self.agents.append(pedestrians.ped(xs[i], ys[i], 0, 0, self.doors, self.room_length, self.room_height))
+                self.agents.append(pedestrians.ped(xs[i], ys[i], 0, 0, self.doors, 
+                                                   self.room_length, self.room_height,
+                                                   self.des_v,self.a_min,self.tau_a,
+                                                   self.b_min,self.b_max,self.eta))
             
         self.N = N
         self.inside = self.N
@@ -248,7 +256,7 @@ class simulation:
                 repulsion = np.array((0, 0),dtype = float)
                 for j in range(self.N):
                     if self.agents[j].status and j != i:
-                        repulsion = repulsion + np.array(agent.compute_repulsion(self.agents[j].position(), self.rep_radius, self.rep_int),dtype = float)
+                        repulsion = repulsion + np.array(agent.compute_repulsion(self.agents[j].position(),self.agents[j].velocity(),(des_x,des_y)),dtype = float)
                         
                 # We compute repulsion from walls
                 
@@ -348,7 +356,7 @@ class simulation:
                 
          # Draw current state of the simulation 
                 
-         if draw and (int((self.time*100)%10) == 0):
+         if draw:
              self.draw(mode)
              plt.show()
                     
