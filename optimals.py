@@ -185,10 +185,10 @@ class optimals:
             vx = grad_x/(mu*phi_den)
             vy = grad_y/(mu*phi_den)
             
-            norm = np.sqrt(vx**2 + vy**2)
+            norm = np.sqrt(vx**2+vy**2)
             
-            norm = norm*(norm > lim) + lim*(norm < lim)
-            
+            norm= norm*(norm > lim) + lim*(norm < lim)
+        
             return vx/norm,vy/norm
         
         phi_T = self.phi_T

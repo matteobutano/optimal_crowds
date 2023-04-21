@@ -8,15 +8,15 @@
 "des_v": 1,
 "relaxation": 0.1,
 "sigma_convolution": 0.5,
-"a_min": 0.15,
-"b_min": 0.1,
-"b_max": 0.2,
-"tau_a": 0.5,
-"eta": 0.1 ,
+"a_min": 0.2,
+"b_min": 0.2,
+"b_max": 0.25,
+"tau_a": 0.1,
+"eta": 1 ,
 
 "hjb_params":{
     "sigma": 0.5,
-    "mu": 3,
+    "mu": 1,
     "wall_potential": -100,
     "door_potential": 1
 }

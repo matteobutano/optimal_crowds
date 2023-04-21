@@ -141,14 +141,11 @@ class ped:
         
         v_rel = 0 
         
-        if np.linalg.norm(vel_i - vel_j) > 0:
+        if np.linalg.norm(vel_j - vel_i) > 0:
     
-            v_rel = vel_i - vel_j
+            v_rel = vel_j - vel_i
+            v_rel = 0.5*(dot(v_rel,-e) + abs(dot(v_rel,-e)))/np.linalg.norm(vel_j - vel_i)
             
-            v_rel = 0.5*(dot(v_rel,e) + abs(dot(v_rel,e)))
-            
-            v_rel = v_rel/np.linalg.norm(vel_i - vel_j)
-        
         # We restrict the repulsion to what happens around the agent at 180°
         
         k = 0
@@ -161,16 +158,16 @@ class ped:
         d_i = dis(pos_i,pos_j,vel_i, a_i, b_i)
         d_j = dis(pos_j,pos_i,vel_j, a_j, b_j)
         dist = np.linalg.norm(R) -d_i-d_j 
-        rep = -self.eta*k*(v_rel)**2/dist
         
-        # plt.arrow(pos_i[0], pos_i[1],rep*R[0], rep*R[1])
-        # plt.xlim([0,5])
-        # plt.ylim([0,5])
-        # plt.show()
         
-        # print('k = {:.2f}, dist =  {:.2f}, v_rel =  {:.2f}, rep =  {:.2f}'.format(k,dist,v_rel,rep))
+        # Finally we compute the repulsion, that kicks in only when two ellypses 
+        # super pose
+        rep = 0
         
-        return rep*R
+        if dist < 0:
+            rep = k *(self.eta*self.des_v + v_rel)/np.linalg.norm(R)
+        
+        return -rep*R
         
     def wall_repulsion(self,repulsion_radius, repulsion_intensity,X,Y,V):
         

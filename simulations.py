@@ -356,9 +356,9 @@ class simulation:
                 
          # Draw current state of the simulation 
                 
-         
+         # and (int(self.time*100%10) == 0)
             
-         if draw and (int(self.time*100%10) == 0):
+         if draw  and (int(self.time*100%10) == 0):
              self.draw(mode)
              plt.show()
                     
