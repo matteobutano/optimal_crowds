@@ -317,7 +317,7 @@ class simulation:
         self.simu_step+=1
         
         if verbose:
-            print('t = {:.2f}s exit = {}/{}'.format(self.time,self.N - self.inside,self.N),end='\r')
+            print('t = {:.2f}s exit = {}/{}'.format(self.time,self.N - self.inside,self.N)+10*' ',end='\r')
             
     # The method evac_times allows to obtain the evacuation time, 
     # i.e., the time needed to exit the simulation room, for each agent.
