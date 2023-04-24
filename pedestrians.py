@@ -186,14 +186,7 @@ class ped:
         e = R/np.linalg.norm(R)
         
         v_rel = 0.5*(dot(vel_i,e) + abs(dot(vel_i,e)))
-        
-        # We restrict the repulsion to what happens around the agent at 180°
-        
-        k = 0
-        
-        if np.linalg.norm(vel_i) > 0:
-            k = 0.5*(dot(vel_i,e) + abs(dot(vel_i,e)))/np.linalg.norm(vel_i)
-        
+       
         alpha_i = np.arctan2(R[1],R[0])
         beta_i = np.arctan2(vel_i[1],vel_i[0])
         
