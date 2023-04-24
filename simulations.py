@@ -124,8 +124,6 @@ class simulation:
         # interaction among agents are read and initialized
         
         self.relaxation = var_config['relaxation']
-        self.rep_radius = var_config['repulsion_radius']
-        self.rep_int = var_config['repulsion_intensity']
         self.noise_intensity = var_config['hjb_params']['sigma']
         self.des_v = var_config['des_v']
         self.a_min = var_config['b_min']
@@ -319,7 +317,7 @@ class simulation:
         self.simu_step+=1
         
         if verbose:
-            print('t = {:.2f}s exit = {}/{}'.format(self.time,self.N - self.inside,self.N),end='\n')
+            print('t = {:.2f}s exit = {}/{}'.format(self.time,self.N - self.inside,self.N),end='\r')
             
     # The method evac_times allows to obtain the evacuation time, 
     # i.e., the time needed to exit the simulation room, for each agent.

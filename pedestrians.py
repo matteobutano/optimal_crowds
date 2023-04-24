@@ -197,7 +197,7 @@ class ped:
         
         dist = np.linalg.norm(R) - 2*q_i 
         
-        rep = np.exp(- np.maximum(dist,0)/(self.eta*(1 + v_rel)))
+        rep = np.exp(-np.maximum(dist,0)/(self.eta*(1 + v_rel)))
         
         return -rep*R
         

@@ -3,8 +3,6 @@
 "dt": 0.02,
 "grid_step":0.1,
 
-"repulsion_radius": 0.25,
-"repulsion_intensity": -1,
 "des_v": 1,
 "relaxation": 0.1,
 "sigma_convolution": 0.5,
@@ -16,7 +14,7 @@
 
 "hjb_params":{
     "sigma": 0.3,
-    "mu": 1,
+    "mu": 2,
     "wall_potential": -100,
     "door_potential": 1
 }
