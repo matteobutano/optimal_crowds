@@ -274,11 +274,11 @@ class simulation:
                     pos_j = self.agents[j].position()
                     vel_j = self.agents[j].velocity()
                     if self.agents[j].status and j != i:
-                        repulsion = repulsion + np.array(agent.compute_repulsion(pos_j,vel_j),dtype = float)
+                        repulsion = repulsion + np.array(agent.agents_repulsion(pos_j,vel_j),dtype = float)
                         
                 # We compute repulsion from walls
                 
-                wall_repulsion = np.array(agent.wall_repulsion(self.rep_radius, self.rep_int,self.X_opt,self.Y_opt,self.V),dtype=float)
+                wall_repulsion = np.array(agent.wall_repulsion(self.X_opt,self.Y_opt,self.V),dtype=float)
                 
                 # We compute current velocity with random perturbation and repulsions
                 

@@ -113,7 +113,7 @@ class ped:
     
     # The following two methods compute the repulsion's intensity and direction. 
     
-    def compute_repulsion(self,pos_j,vel_j):
+    def agents_repulsion(self,pos_j,vel_j):
         
         # Given a position, (usually another agent's), the repulsion is computed
         # generalized centrifugal force model. 
@@ -127,7 +127,6 @@ class ped:
         b_i = self.b_max - (self.b_max - self.b_min)*np.minimum(np.linalg.norm(vel_i)/self.des_v,1)
         a_j = self.a_min + self.tau_a * np.linalg.norm(vel_j)
         b_j = self.b_max - (self.b_max - self.b_min)*np.minimum(np.linalg.norm(vel_j)/self.des_v,1)
-        
         
         # First we compute the relative position of j
         
@@ -166,27 +165,49 @@ class ped:
         
         return -rep*R
         
-    def wall_repulsion(self,repulsion_radius, repulsion_intensity,X,Y,V):
+    def wall_repulsion(self,X,Y,V):
         
         # In order to compute walls repulsion, we calculate the closest point
         # belonging to the potential V and compute the vector along that direction pointing
         # away from the door. 
         
-        x,y = self.position()
-    
-        d = np.sqrt((X-x)**2 + (Y-y)**2)
+        dot = lambda a,b: a[0]*b[0] + a[1]*b[1]
         
-        ind = np.unravel_index(np.argmin(d + V*10e10), d.shape)
+        pos_i = self.position()
+        vel_i = self.velocity()
         
-        # Repulsion from the walls kicks in only under a threshold 
+        distances = np.sqrt((X-pos_i[0])**2 + (Y-pos_i[1])**2)
         
-        if d[ind] < repulsion_radius:
-            rep = -np.array((x - X[ind],y-Y[ind]),dtype = float)
-            return repulsion_intensity* (rep/d[ind])
+        ind = np.unravel_index(np.argmin(distances + V*10e10), distances.shape)
         
-        else:
-            return np.array((0,0),dtype = float)
-                    
+        pos_wall = (X[ind],Y[ind])
+        
+        R = pos_wall - pos_i 
+        e = R/np.linalg.norm(R)
+        
+        v_rel = 0.5*(dot(vel_i,e) + abs(dot(vel_i,e)))
+        
+        # We restrict the repulsion to what happens around the agent at 180°
+        
+        k = 0
+        
+        if np.linalg.norm(vel_i) > 0:
+            k = 0.5*(dot(vel_i,e) + abs(dot(vel_i,e)))/np.linalg.norm(vel_i)
+        
+        alpha_i = np.arctan2(R[1],R[0])
+        beta_i = np.arctan2(vel_i[1],vel_i[0])
+        
+        a_i = self.a_min + self.tau_a * np.linalg.norm(vel_i)
+        b_i = self.b_max - (self.b_max - self.b_min)*np.minimum(np.linalg.norm(vel_i)/self.des_v,1)
+        
+        q_i = 1/((np.cos(alpha_i-beta_i)/a_i)**2 + (np.sin(alpha_i-beta_i)/b_i)**2)
+        
+        dist = np.linalg.norm(R) - 2*q_i 
+        
+        rep = np.exp(- np.maximum(dist,0)/(self.eta*(1 + v_rel)))
+        
+        return -rep*R
+        
     # This method draws an agent's full trajectory 
     
     def draw_trajectory(self):
