@@ -423,6 +423,7 @@ class simulation:
         plt.imshow(np.flip(self.V,axis = 0),extent=[0,self.room_length,0,self.room_height])
         plt.xlim([0,self.room_length])
         plt.ylim([0,self.room_height])
+        plt.title('{} pedestrians evacuated in {:.2f}s'.format(self.N,self.time))
         
         plt.show()
         
