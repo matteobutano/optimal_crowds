@@ -1,21 +1,21 @@
 {
 
-"dt": 0.01,
+"dt": 0.02,
 "grid_step":0.1,
 
-"repulsion_radius": 0.5,
+"repulsion_radius": 0.25,
 "repulsion_intensity": -1,
 "des_v": 1,
 "relaxation": 0.1,
 "sigma_convolution": 0.5,
-"a_min": 0.2,
+"a_min": 0.18,
 "b_min": 0.2,
 "b_max": 0.25,
-"tau_a": 0.1,
-"eta": 1 ,
+"tau_a": 0.53,
+"eta": 0.2,
 
 "hjb_params":{
-    "sigma": 0.5,
+    "sigma": 0.3,
     "mu": 1,
     "wall_potential": -100,
     "door_potential": 1

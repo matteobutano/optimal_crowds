@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 # environment agents are subjected to.  
   
 class ped:   
-    def __init__(self,x,y,vx,vy,doors,room_length,room_height,des_v,a_min,tau_a,b_min,b_max,eta):
+    def __init__(self,X,Y,V,x,y,vx,vy,doors,room_length,room_height,des_v,a_min,tau_a,b_min,b_max,eta):
         
         # Parameters are passed as argument to allow greater agents personalization
         
@@ -57,6 +57,12 @@ class ped:
         self.vels = []
         self.traj.append(self.initial_position)
         self.vels.append(self.initial_velocity)
+        
+        # The room is given aswell
+        
+        self.X = X
+        self.Y = Y
+        self.V = V
     
     # This method identifies the actual target as the closest of doors
     
@@ -109,15 +115,6 @@ class ped:
     
     def compute_repulsion(self,pos_j,vel_j):
         
-        def dis(pos_i, pos_j,vel,a,b):
-            
-            R = pos_j - pos_i
-            alpha = np.arctan2(R[1],R[0])
-            beta = np.arctan2(vel[1],vel[0])
-            q = (np.cos(alpha-beta)/a)**2 + (np.sin(alpha-beta)/b)**2
-
-            return 1/np.sqrt(q)
-        
         # Given a position, (usually another agent's), the repulsion is computed
         # generalized centrifugal force model. 
         
@@ -138,14 +135,10 @@ class ped:
         e = R/np.linalg.norm(R)
         
         # Then we compute the relative velocity of j
-        
-        v_rel = 0 
-        
-        if np.linalg.norm(vel_j - vel_i) > 0:
-    
-            v_rel = vel_j - vel_i
-            v_rel = 0.5*(dot(v_rel,-e) + abs(dot(v_rel,-e)))/np.linalg.norm(vel_j - vel_i)
-            
+      
+        v_rel = vel_j - vel_i
+        v_rel = 0.5*(dot(v_rel,-e) + abs(dot(v_rel,-e)))
+      
         # We restrict the repulsion to what happens around the agent at 180°
         
         k = 0
@@ -154,18 +147,22 @@ class ped:
             k = 0.5*(dot(vel_i,e) + abs(dot(vel_i,e)))/np.linalg.norm(vel_i)
         
         # Now we compute the distance between ellypses along direction of the centers
-        
-        d_i = dis(pos_i,pos_j,vel_i, a_i, b_i)
-        d_j = dis(pos_j,pos_i,vel_j, a_j, b_j)
-        dist = np.linalg.norm(R) -d_i-d_j 
-        
+    
+        alpha_i = np.arctan2(R[1],R[0])
+        beta_i = np.arctan2(vel_i[1],vel_i[0])
+        alpha_j = np.arctan2(-R[1],-R[0])
+        beta_j = np.arctan2(vel_j[1],vel_j[0])
+        q_i = 1/((np.cos(alpha_i-beta_i)/a_i)**2 + (np.sin(alpha_i-beta_i)/b_i)**2)
+        q_j = 1/((np.cos(alpha_j-beta_j)/a_j)**2 + (np.sin(alpha_j-beta_j)/b_j)**2)
+        dist = np.linalg.norm(R) - q_i - q_j 
         
         # Finally we compute the repulsion, that kicks in only when two ellypses 
         # super pose
-        rep = 0
         
-        if dist < 0:
-            rep = k *(self.eta*self.des_v + v_rel)/np.linalg.norm(R)
+        rep = k * np.exp(- np.maximum(dist,0)/(self.eta*(1 + v_rel)))
+        
+        if rep < 0 :
+            raise ValueError('Attractive repulsion', rep)
         
         return -rep*R
         
@@ -197,3 +194,4 @@ class ped:
         plt.plot(traj[:,0],traj[:,1])
         plt.xlim([0,self.room_length])
         plt.ylim([0,self.room_height])
+    

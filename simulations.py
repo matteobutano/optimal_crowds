@@ -6,6 +6,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+from  matplotlib.patches import Ellipse
 from optimal_crowds import pedestrians
 from optimal_crowds import optimals
 import json
@@ -164,7 +165,8 @@ class simulation:
                 # which allows us to monitor the various parameters of each agent's
                 # dynamics, such as speed, position, direction, target, evacuation time etc.
                    
-                self.agents.append(pedestrians.ped(xs[i], ys[i], 0, 0, self.doors, 
+                self.agents.append(pedestrians.ped(self.Y_opt,self.X_opt,self.V,
+                                                   xs[i], ys[i], 0, 0, self.doors, 
                                                    self.room_length, self.room_height,
                                                    self.des_v,self.a_min,self.tau_a,
                                                    self.b_min,self.b_max,self.eta))
@@ -189,9 +191,23 @@ class simulation:
         
             for i in range(self.N): 
                 if self.agents[i].status:
-                    c = self.agents[i].position()
-                    C = plt.Circle(c,radius = 0.2)
-                    plt.gca().add_artist(C)
+                    
+                    agent = self.agents[i]
+                    
+                    c = agent.position()
+                    # C = plt.Circle(c,radius = 0.2)
+                
+                    vel_i = agent.velocity()
+                    
+                    direction = np.degrees(np.arctan2(vel_i[1],vel_i[0]))
+            
+                    a_i = agent.a_min + agent.tau_a * np.linalg.norm(vel_i)
+                    b_i = agent.b_max - (agent.b_max - agent.b_min)*np.minimum(np.linalg.norm(vel_i)/agent.des_v,1)
+                    
+                    E = Ellipse(c, width = a_i , height= b_i, angle = direction)
+                    
+                    plt.gca().add_artist(E)
+                    
             plt.imshow(np.flip(self.V,axis = 0),extent=[0,self.room_length,0,self.room_height])
             plt.xlim([0,self.room_length])
             plt.ylim([0,self.room_height])
@@ -255,8 +271,10 @@ class simulation:
                 
                 repulsion = np.array((0, 0),dtype = float)
                 for j in range(self.N):
+                    pos_j = self.agents[j].position()
+                    vel_j = self.agents[j].velocity()
                     if self.agents[j].status and j != i:
-                        repulsion = repulsion + np.array(agent.compute_repulsion(self.agents[j].position(),self.agents[j].velocity()),dtype = float)
+                        repulsion = repulsion + np.array(agent.compute_repulsion(pos_j,vel_j),dtype = float)
                         
                 # We compute repulsion from walls
                 
@@ -358,7 +376,7 @@ class simulation:
                 
          # and (int(self.time*100%10) == 0)
             
-         if draw  and (int(self.time*100%10) == 0):
+         if draw:
              self.draw(mode)
              plt.show()
                     
