@@ -191,10 +191,7 @@ class simulation:
                 if self.agents[i].status:
                     
                     agent = self.agents[i]
-                    
-                    c = agent.position()
-                    # C = plt.Circle(c,radius = 0.2)
-                
+                    pos_i = agent.position()
                     vel_i = agent.velocity()
                     
                     direction = np.degrees(np.arctan2(vel_i[1],vel_i[0]))
@@ -202,7 +199,7 @@ class simulation:
                     a_i = agent.a_min + agent.tau_a * np.linalg.norm(vel_i)
                     b_i = agent.b_max - (agent.b_max - agent.b_min)*np.minimum(np.linalg.norm(vel_i)/agent.des_v,1)
                     
-                    E = Ellipse(c, width = a_i , height= b_i, angle = direction)
+                    E = Ellipse(pos_i, width = a_i , height= b_i, angle = direction)
                     
                     plt.gca().add_artist(E)
                     
@@ -423,7 +420,7 @@ class simulation:
         plt.imshow(np.flip(self.V,axis = 0),extent=[0,self.room_length,0,self.room_height])
         plt.xlim([0,self.room_length])
         plt.ylim([0,self.room_height])
-        plt.title('{} pedestrians evacuated in {:.2f}s'.format(self.N,self.time))
+        plt.title('{}/{} pedestrians evacuated in {:.2f}s'.format(self.N-self.inside,self.N,self.time))
         
         plt.show()
         
