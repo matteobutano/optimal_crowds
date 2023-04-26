@@ -98,6 +98,10 @@ class simulation:
             self.V+= V_temp
         
         self.V = self.pot *(self.V <= self.pot)  
+        self.V[:,0] = self.pot
+        self.V[:,-1] = self.pot
+        self.V[0,:] = self.pot
+        self.V[-1,:] = self.pot
         
         self.doors = np.empty((len(var_room['doors']),4))
         for i,door in enumerate(var_room['doors']):
@@ -111,8 +115,6 @@ class simulation:
            
             self.V[door_X*door_Y] = var_config['hjb_params']['door_potential']
             
-        self.phi_T = self.phi_T.reshape(self.Nx*self.Ny)
-        
         # Here the time discretization is defined
         
         self.T = T
@@ -136,7 +138,7 @@ class simulation:
         # We create the object containing the optimal trajectories for the abm 
         # and also the one able to compute the mfg
         
-        self.optimal = optimals.optimals(room,T)
+        self.optimal = optimals.optimals(room,self.V,T)
         
         # Finally, depending on the mode of the simulation, we initialize the crowd 
         # both for the abm and the mfg
@@ -381,7 +383,7 @@ class simulation:
      if self.inside == 0:
         print('Evacuation complete in {:.2f}s!'.format(self.time))
      else:
-        print('Evacuation failed!')
+        print('Evacuation failed!'+10*' ')
          
     # The 'gaussian_density' method computes the gaussian convolution of the agents
     # positions. Each position is the center of a gaussian with standard deviation

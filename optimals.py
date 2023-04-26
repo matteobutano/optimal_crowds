@@ -13,7 +13,7 @@ import json
 # trajectories as per the cost functional cited in my pubblications.
 
 class optimals:
-    def __init__(self,room,T):
+    def __init__(self,room,V,T):
         
         # The config.json contains the parameters of the abm agents and
         # of the HJB equation used to guide their motion 
@@ -67,56 +67,11 @@ class optimals:
         
         # Create potential V
         
-        self.V = np.zeros((self.Ny,self.Nx)) + self.pot
-        self.V[1:-1,1:-1] = 0
-        self.lim = 10e-10
-        
-        # Read room 
-        
-        self.doors = np.empty((len(var_room['doors']),4))
-        for i,door in enumerate(var_room['doors']):
-            self.doors[i,:] = np.array(var_room['doors'][str(door)])
-        
-        for walls in var_room['walls']:
-            wall = var_room['walls'][walls]
-
-            mask_X = abs(self.X_opt-wall[0]) < wall[2]/2
-            mask_Y = abs(self.Y_opt-wall[1]) < wall[3]/2
-           
-            V_temp = np.zeros((self.Ny,self.Nx))
-            
-            V_temp[mask_X*mask_Y] = self.pot
-            
-            self.V += V_temp
-         
-        for holes in var_room['holes']:
-            hole = var_room['holes'][holes]
-        
-            hole_X = abs(self.X_opt-hole[0]) < hole[2]/2
-            hole_Y = abs(self.Y_opt-hole[1]) < hole[3]/2
-            
-            self.V[hole_X*hole_Y] = 0   
-        
-        for cyls in var_room['cylinders']:
-            cyl = var_room['cylinders'][cyls]
-            
-            V_temp =  np.zeros((self.Ny,self.Nx))
-            
-            V_temp[np.sqrt((self.X_opt-cyl[0])**2 + (self.Y_opt-cyl[1])**2) < cyl[2]] = self.pot
-            
-            self.V+= V_temp
-        
-        self.V = self.pot *(self.V <= self.pot)  
-        
-        for door in var_room['doors']:
-            door = var_room['doors'][door]
-            
-            door_X = abs(self.X_opt - door[0]) < door[2]/2
-            door_Y = abs(self.Y_opt - door[1]) < door[3]/2
-            
-            self.V[door_X*door_Y] = var_config['hjb_params']['door_potential']
+        self.V = V
             
         self.phi_T = self.phi_T.reshape(self.Nx*self.Ny)
+        
+        self.lim = 10e-10
         
     # The 'draw_optimal_velocities' method draws the velocities obtained 
     # by solving the HJB equation in the Cole-Hopf transformation. 
