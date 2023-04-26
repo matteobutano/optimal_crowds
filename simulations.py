@@ -131,6 +131,7 @@ class simulation:
         self.b_min = var_config['b_min']
         self.b_max = var_config['b_max']
         self.eta = var_config['eta']
+        self.repulsion_cutoff = var_config['repulsion_cutoff']
         
         # We create the object containing the optimal trajectories for the abm 
         # and also the one able to compute the mfg
@@ -268,7 +269,7 @@ class simulation:
                 for j in range(self.N):
                     pos_j = self.agents[j].position()
                     vel_j = self.agents[j].velocity()
-                    if self.agents[j].status and j != i:
+                    if self.agents[j].status and j != i and agent.distance(pos_j) < self.repulsion_cutoff:
                         repulsion = repulsion + np.array(agent.agents_repulsion(pos_j,vel_j),dtype = float)
                         
                 # We compute repulsion from walls
@@ -314,7 +315,7 @@ class simulation:
         self.simu_step+=1
         
         if verbose:
-            print('t = {:.2f}s exit = {}/{}'.format(self.time,self.N - self.inside,self.N)+10*' ',end='\r')
+            print('t = {:.2f}s exit = {}/{}'.format(self.time,self.N - self.inside,self.N)+10*' ',end='\n')
             
     # The method evac_times allows to obtain the evacuation time, 
     # i.e., the time needed to exit the simulation room, for each agent.

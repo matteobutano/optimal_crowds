@@ -108,7 +108,8 @@ class ped:
             raise ValueError('This pedestrian has not exited the room yet!')
         return self.time
     
-    def distance(self,x,y):
+    def distance(self,pos):
+        x,y = pos
         return np.sqrt((self.position()[0]-x)**2 + (self.position()[1]-y)**2)
     
     # The following two methods compute the repulsion's intensity and direction. 

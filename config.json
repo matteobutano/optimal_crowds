@@ -11,6 +11,7 @@
 "b_max": 0.25,
 "tau_a": 0.53,
 "eta": 0.2,
+"repulsion_cutoff": 3,
 
 "hjb_params":{
     "sigma": 0.3,
