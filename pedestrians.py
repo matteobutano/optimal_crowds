@@ -194,12 +194,3 @@ class ped:
         rep = np.exp(-np.maximum(dist,0)/(self.eta*(1 + v_rel)))
         
         return -rep*R
-        
-    # This method draws an agent's full trajectory 
-    
-    def draw_trajectory(self):
-        traj = np.array(self.traj)
-        plt.plot(traj[:,0],traj[:,1])
-        plt.xlim([0,self.room_length])
-        plt.ylim([0,self.room_height])
-    

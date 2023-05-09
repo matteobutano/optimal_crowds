@@ -13,7 +13,7 @@ import json
 # trajectories as per the cost functional cited in my pubblications.
 
 class optimals:
-    def __init__(self,room,V,T):
+    def __init__(self,room,V,T,target):
         
         # The config.json contains the parameters of the abm agents and
         # of the HJB equation used to guide their motion 
@@ -64,6 +64,8 @@ class optimals:
         self.vy_opt = np.empty((self.nt_opt-1,self.Ny-2,self.Nx-2))
         
         self.phi_T =  np.zeros((self.Ny,self.Nx),dtype = float) + 1
+        
+        self.target = target
         
         # Create potential V
         
@@ -163,7 +165,7 @@ class optimals:
             self.vx_opt[i-1] = vx
             self.vy_opt[i-1] = vy
 
-        print('Optimal trajectories have been learnt!')
+        print('Optimal trajectories have been learnt for ' + self.target )
     
     # Given an agent's position, the 'choose_optimal_velocity' method
     # assings the corresponding optimal velocity at a given time 

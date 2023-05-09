@@ -55,6 +55,7 @@ class simulation:
                                              ,np.linspace(0,self.room_height,self.Ny))
         
         self.sigma_convolution = var_config['sigma_convolution']
+        self.pot = var_config['hjb_params']['wall_potential']
         self.lim = 10e-6
         
         # Here the time discretization is defined
@@ -87,10 +88,10 @@ class simulation:
         for target in var_room['targets']:
             V = self.create_potential(var_room,var_config,target)
             self.Vs[target] = V
-            self.targets[target] = optimals.optimals(room,V,T)
-            self.V=V
+            self.targets[target] = optimals.optimals(room,V,T,target)
+            self.V*=V
             
-    
+        self.V = self.pot*(self.V > 0)
         
         # Finally, depending on the mode of the simulation, we initialize the crowd 
         # both for the abm and the mfg
@@ -388,9 +389,13 @@ class simulation:
         plt.legend(handles = handles, loc = 'upper right', frameon = False)
         plt.show()
         
+        
+    # This module allows for the creation of the potential V
+    # with a given target 
     
     def create_potential(self,var_room,var_config,target):
-        pot = var_config['hjb_params']['wall_potential']
+        
+        pot = self.pot
         V = np.zeros((self.Ny,self.Nx)) + pot
         V[1:-1,1:-1] = 0
         
@@ -436,4 +441,3 @@ class simulation:
         V[target_X*target_Y] = var_config['hjb_params']['target_potential']
         
         return V
-        
