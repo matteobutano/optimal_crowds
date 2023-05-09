@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 # environment agents are subjected to.  
   
 class ped:   
-    def __init__(self,X,Y,V,x,y,vx,vy,doors,room_length,room_height,des_v,a_min,tau_a,b_min,b_max,eta):
+    def __init__(self,X,Y,V,target,x,y,vx,vy,targets,room_length,room_height,des_v,a_min,tau_a,b_min,b_max,eta):
         
         # Parameters are passed as argument to allow greater agents personalization
         
@@ -35,7 +35,7 @@ class ped:
         
         # The target represent the favourite simulation exits
         
-        self.target = 0
+        self.target = target
         
         # Agents keep track of time
         
@@ -43,7 +43,7 @@ class ped:
         
         # Agents know the available escapes
         
-        self.doors = doors
+        self.targets = targets
         
         # Agents know the room main features
         
@@ -63,19 +63,12 @@ class ped:
         self.X = X
         self.Y = Y
         self.V = V
-    
-    # This method identifies the actual target as the closest of doors
-    
-    def choose_target(self):
-        x,y = self.position()
-        distances = np.sqrt((x-self.doors[:,0])**2 + (y-self.doors[:,1])**2)
-        self.target = np.argmin(distances)
         
     # This method acquire's the current target's main features
     
     def look_target(self):
-        x_door,y_door = self.doors[self.target,:2]
-        door_width_x,door_width_y = self.doors[self.target,2:4]
+        x_door,y_door = self.targets[self.target][:2]
+        door_width_x,door_width_y = self.targets[self.target][2:4]
         return (x_door,y_door, door_width_x,door_width_y)
         
     # This method check wether the agent is still to be considered inside the room

@@ -6,10 +6,11 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-from  matplotlib.patches import Ellipse
+from  matplotlib.patches import Ellipse,Patch
 from optimal_crowds import pedestrians
 from optimal_crowds import optimals
 import json
+import seaborn as sns
 
 # The simulation class creates the simulation room and makes it evolve 
 # accordingly to the mode indicated as argument. The 'abm' creates an agent based model 
@@ -54,67 +55,8 @@ class simulation:
                                              ,np.linspace(0,self.room_height,self.Ny))
         
         self.sigma_convolution = var_config['sigma_convolution']
-        
-        # Here we initialise the terminal condition of the Cole-Hopf transformed
-        # value function, from which, solving the HJB equation, 
-        # we will obstain the optimal trajectories
-        
-        self.phi_T =  np.zeros((self.Ny,self.Nx),dtype = float)
-        
-        # Here the walls are created, and they will be used both 
-        # as the potential representing the interactions with the 
-        # environment in the MFG and the repulsive walls of the abm
-        
-        self.pot = var_config['hjb_params']['wall_potential']
-        self.V = np.zeros((self.Ny,self.Nx)) + self.pot
-        self.V[1:-1,1:-1] = 0
         self.lim = 10e-6
         
-        for walls in var_room['walls']:
-            wall = var_room['walls'][walls]
-
-            mask_X = abs(self.X_opt-wall[0]) < wall[2]/2
-            mask_Y = abs(self.Y_opt-wall[1]) < wall[3]/2          
-            
-            V_temp = np.zeros((self.Ny,self.Nx))
-            V_temp[mask_X*mask_Y] = self.pot
-            
-            self.V += V_temp
-         
-        for holes in var_room['holes']:
-            hole = var_room['holes'][holes]
-        
-            hole_X = abs(self.X_opt-hole[0]) < hole[2]/2
-            hole_Y = abs(self.Y_opt-hole[1]) < hole[3]/2
-            
-            self.V[hole_X*hole_Y] = 0   
-        
-        for cyls in var_room['cylinders']:
-            cyl = var_room['cylinders'][cyls]
-            
-            V_temp =  np.zeros((self.Ny,self.Nx))
-            V_temp[np.sqrt((self.X_opt-cyl[0])**2 + (self.Y_opt-cyl[1])**2) < cyl[2]] = self.pot
-            
-            self.V+= V_temp
-        
-        self.V = self.pot *(self.V <= self.pot)  
-        self.V[:,0] = self.pot
-        self.V[:,-1] = self.pot
-        self.V[0,:] = self.pot
-        self.V[-1,:] = self.pot
-        
-        self.doors = np.empty((len(var_room['doors']),4))
-        for i,door in enumerate(var_room['doors']):
-            self.doors[i,:] = np.array(var_room['doors'][str(door)])
-        
-        for door in var_room['doors']:
-            door = var_room['doors'][door]
-            
-            door_X = abs(self.X_opt - door[0]) < door[2]/2
-            door_Y = abs(self.Y_opt - door[1]) < door[3]/2
-           
-            self.V[door_X*door_Y] = var_config['hjb_params']['door_potential']
-            
         # Here the time discretization is defined
         
         self.T = T
@@ -137,8 +79,18 @@ class simulation:
         
         # We create the object containing the optimal trajectories for the abm 
         # and also the one able to compute the mfg
+         
+        self.targets = {}
+        self.Vs = {}
+        self.V = np.zeros((self.Ny,self.Nx)) + 1
         
-        self.optimal = optimals.optimals(room,self.V,T)
+        for target in var_room['targets']:
+            V = self.create_potential(var_room,var_config,target)
+            self.Vs[target] = V
+            self.targets[target] = optimals.optimals(room,V,T)
+            self.V=V
+            
+    
         
         # Finally, depending on the mode of the simulation, we initialize the crowd 
         # both for the abm and the mfg
@@ -149,9 +101,9 @@ class simulation:
         
        
         for boxes in var_room['initial_boxes']:
-                
+                  
             box = var_room['initial_boxes'][boxes]
-                
+           
             loc_N = int(box[4] * box[2] * box[3])
             
             N += loc_N
@@ -166,8 +118,8 @@ class simulation:
                 # which allows us to monitor the various parameters of each agent's
                 # dynamics, such as speed, position, direction, target, evacuation time etc.
                    
-                self.agents.append(pedestrians.ped(self.Y_opt,self.X_opt,self.V,
-                                                   xs[i], ys[i], 0, 0, self.doors, 
+                self.agents.append(pedestrians.ped(self.Y_opt,self.X_opt,self.Vs[box[5]],box[5],
+                                                   xs[i], ys[i], 0, 0, var_room['targets'], 
                                                    self.room_length, self.room_height,
                                                    self.des_v,self.a_min,self.tau_a,
                                                    self.b_min,self.b_max,self.eta))
@@ -183,6 +135,7 @@ class simulation:
     def draw(self,mode = 'scatter'):
         
         plt.figure(figsize = (self.room_length,self.room_height))
+        colors = sns.color_palette(n_colors=len(self.targets))
         
         # This method draws a snapshot of the simulation room at each time step
     
@@ -202,7 +155,10 @@ class simulation:
                     a_i = agent.a_min + agent.tau_a * np.linalg.norm(vel_i)
                     b_i = agent.b_max - (agent.b_max - agent.b_min)*np.minimum(np.linalg.norm(vel_i)/agent.des_v,1)
                     
-                    E = Ellipse(pos_i, width = a_i , height= b_i, angle = direction)
+                    color_index = list(self.targets).index(agent.target)
+                    
+                    E = Ellipse(pos_i, width = a_i , height= b_i, angle = direction,
+                                color = colors[color_index])
                     
                     plt.gca().add_artist(E)
                     
@@ -211,6 +167,8 @@ class simulation:
             plt.ylim([0,self.room_height])
             title = 't = {:.2f}s exit = {}/{}'.format(self.time,self.N - self.inside,self.N)
             plt.title(title)
+            handles = [Patch(color=colors[i],label = list(self.targets)[i]) for i in range(len(self.targets))]
+            plt.legend(handles = handles, loc = 'upper right', frameon = False)
             plt.show()
          
         if mode == 'arrows':
@@ -263,7 +221,7 @@ class simulation:
             
                 # We assign to the agent the velocity prescribed optimally by the HJB equation
                 
-                des_x, des_y  = self.optimal.choose_optimal_velocity(agent.position(), self.simu_step)
+                des_x, des_y  = self.targets[agent.target].choose_optimal_velocity(agent.position(), self.simu_step)
                 
                 # We compute the repulsion from other agents
                 
@@ -276,7 +234,7 @@ class simulation:
                         
                 # We compute repulsion from walls
                 
-                wall_repulsion = np.array(agent.wall_repulsion(self.X_opt,self.Y_opt,self.V),dtype=float)
+                wall_repulsion = np.array(agent.wall_repulsion(self.X_opt,self.Y_opt,self.Vs[agent.target]),dtype=float)
                 
                 # We compute current velocity with random perturbation and repulsions
                 
@@ -306,9 +264,6 @@ class simulation:
                 if agent.status == False:
                     self.inside +=-1
                     
-                # And choose new target
-                
-                agent.choose_target()
         
         # After all agents have been summoned and their status updated, 
         # we advance time and simu step, to keep track of the time evolution of the simulation
@@ -317,7 +272,7 @@ class simulation:
         self.simu_step+=1
         
         if verbose:
-            print('t = {:.2f}s exit = {}/{}'.format(self.time,self.N - self.inside,self.N)+10*' ',end='\r')
+            print('t = {:.2f}s exit = {}/{}'.format(self.time,self.N - self.inside,self.N)+10*' ',end='\n')
             
     # The method evac_times allows to obtain the evacuation time, 
     # i.e., the time needed to exit the simulation room, for each agent.
@@ -362,7 +317,8 @@ class simulation:
      # Before starting the abm simulation, we compute the optimal velocities 
      # by solving the HJB representing obstacles and targets.
         
-     self.optimal.compute_optimal_velocity()
+     for target in self.targets:
+         self.targets[target].compute_optimal_velocity()
             
      while (self.inside > 0) & (self.time < self.T): 
          # The abm simulation is updated one step at the time, 
@@ -374,7 +330,7 @@ class simulation:
                 
          # and (int(self.time*100%10) == 0)
             
-         if draw:
+         if draw and (self.simu_step % 10) == 0 :
              self.draw(mode)
              plt.show()
                     
@@ -416,14 +372,68 @@ class simulation:
     def draw_final_trajectories(self):
         
         plt.figure(figsize = (self.room_length,self.room_height))
+        colors = sns.color_palette(n_colors=len(self.targets))
         
         for i in range(self.N):
-            self.agents[i].draw_trajectory()
+            agent = self.agents[i]
+            color_index = list(self.targets).index(agent.target)
+            traj = np.array(agent.traj,dtype = float)
+            plt.plot(traj[:,0],traj[:,1],color = colors[color_index])
         
         plt.imshow(np.flip(self.V,axis = 0),extent=[0,self.room_length,0,self.room_height])
         plt.xlim([0,self.room_length])
         plt.ylim([0,self.room_height])
         plt.title('{}/{} pedestrians evacuated in {:.2f}s'.format(self.N-self.inside,self.N,self.time))
-        
+        handles = [Patch(color=colors[i],label = list(self.targets)[i]) for i in range(len(self.targets))]
+        plt.legend(handles = handles, loc = 'upper right', frameon = False)
         plt.show()
+        
+    
+    def create_potential(self,var_room,var_config,target):
+        pot = var_config['hjb_params']['wall_potential']
+        V = np.zeros((self.Ny,self.Nx)) + pot
+        V[1:-1,1:-1] = 0
+        
+        for walls in var_room['walls']:
+            wall = var_room['walls'][walls]
+
+            mask_X = abs(self.X_opt-wall[0]) < wall[2]/2
+            mask_Y = abs(self.Y_opt-wall[1]) < wall[3]/2          
+            
+            V_temp = np.zeros((self.Ny,self.Nx))
+            V_temp[mask_X*mask_Y] = pot
+            
+            V += V_temp
+         
+        for holes in var_room['holes']:
+            hole = var_room['holes'][holes]
+        
+            hole_X = abs(self.X_opt-hole[0]) < hole[2]/2
+            hole_Y = abs(self.Y_opt-hole[1]) < hole[3]/2
+            
+            V[hole_X*hole_Y] = 0   
+        
+        for cyls in var_room['cylinders']:
+            cyl = var_room['cylinders'][cyls]
+            
+            V_temp =  np.zeros((self.Ny,self.Nx))
+            V_temp[np.sqrt((self.X_opt-cyl[0])**2 + (self.Y_opt-cyl[1])**2) < cyl[2]] = pot
+            
+            V+= V_temp
+        
+        V = pot *(V <= pot)  
+        V[:,0] = pot
+        V[:,-1] = pot
+        V[0,:] = pot
+        V[-1,:] = pot
+        
+        
+        target = var_room['targets'][target]
+        
+        target_X = abs(self.X_opt - target[0]) < target[2]/2
+        target_Y = abs(self.Y_opt - target[1]) < target[3]/2
+          
+        V[target_X*target_Y] = var_config['hjb_params']['target_potential']
+        
+        return V
         

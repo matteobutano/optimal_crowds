@@ -17,7 +17,7 @@
     "sigma": 0.3,
     "mu": 3,
     "wall_potential": -100,
-    "door_potential": 1
+    "target_potential": 1
 }
 }
 
