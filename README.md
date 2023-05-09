@@ -13,8 +13,8 @@ To correctly set up your package:
 
 In the 'rooms' folder, you will place the .json files containing all the information about the configurations you wish to simulate. You can move the 'room_test.json' file from this repo to your 'rooms' folder and modify it. The main elements of the room configuration file are:
 - **room_legth** and **room_height**: the extension along the x and y axes of the simulation room
-- **initial_boxes**: telling the rectagular regions of the simulation room we initialize the agents. Each box is an array telling in order: the rectangle's center's x coordinate, y coordinate, horizontal width, vertical width, the value of the average density in the initial box, measured in ped/m²
-- **doors**: the target areas of pedestrians' motion. Each door is an array telling in order: the door's center's x coordinate, y coordinate, horizontal width, vertical width
+- **initial_boxes**: telling the rectagular regions of the simulation room we initialize the agents. Each box is an array telling in order: the rectangle's center's x coordinate, y coordinate, horizontal width, vertical width, the value of the average density in the initial box, measured in ped/m² and the target agents spawned in that box will head towards
+- **targets**: the target areas of pedestrians' motion. Each door is an array telling in order: the door's center's x coordinate, y coordinate, horizontal width, vertical width
 - **walls**: rectangular obstacles placed in the simulation room. Each wall is an array telling in order: the wall's center's x coordinate, y coordinate, horizontal width, vertical width 
 - **holes**: openings in walls. Each hole is an array telling in order: the the hole's center's x coordinate, y coordinate, horizontal width, vertical width 
 - **cylinders**: cylindrical obstacles in the simulation room. Each cylinder is an array telling in order: the cylinder's center's x coordinate, y coordinate, the cylinder radius
