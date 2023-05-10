@@ -78,32 +78,28 @@ class simulation:
         self.eta = var_config['eta']
         self.repulsion_cutoff = var_config['repulsion_cutoff']
         
-        # We create the object containing the optimal trajectories for the abm 
-        # and also the one able to compute the mfg
-         
-        self.targets = {}
-        self.Vs = {}
-        self.V = np.zeros((self.Ny,self.Nx)) + 1
         
-        for target in var_room['targets']:
-            V = self.create_potential(var_room,var_config,target)
-            self.Vs[target] = V
-            self.targets[target] = optimals.optimals(room,V,T,target)
-            self.V*=V
-            
-        self.V = self.pot*(self.V > 0)
-        
-        # Finally, depending on the mode of the simulation, we initialize the crowd 
-        # both for the abm and the mfg
+        # We initialize the crowd, we will count the number of agents and create 
+        # the different potentials given by the combinations of targets
         
         N = 0
         self.agents =[]
-        self.m_0 = np.zeros((self.Ny,self.Nx),dtype = float)
-        
        
-        for boxes in var_room['initial_boxes']:
+        self.targets = {}
+        self.Vs = {}
+        self.V = np.zeros((self.Ny,self.Nx)) + 1
+    
+        for box in var_room['initial_boxes']:
                   
-            box = var_room['initial_boxes'][boxes]
+            box = var_room['initial_boxes'][box]
+            
+            targets = box[5:]
+            key = ' or '.join(targets)
+            
+            V = self.create_potential(var_room,var_config,targets)
+            self.Vs[key] = V
+            self.targets[key] = optimals.optimals(room,V,T,key)
+            self.V*= V
            
             loc_N = int(box[4] * box[2] * box[3])
             
@@ -119,12 +115,16 @@ class simulation:
                 # which allows us to monitor the various parameters of each agent's
                 # dynamics, such as speed, position, direction, target, evacuation time etc.
                    
-                self.agents.append(pedestrians.ped(self.Y_opt,self.X_opt,self.Vs[box[5]],box[5],
-                                                   xs[i], ys[i], 0, 0, var_room['targets'], 
+                self.agents.append(pedestrians.ped(self.Y_opt,self.X_opt,self.Vs[key],key, 
+                                                   var_room['targets'],xs[i], ys[i], 0, 0, 
                                                    self.room_length, self.room_height,
                                                    self.des_v,self.a_min,self.tau_a,
                                                    self.b_min,self.b_max,self.eta))
             
+        
+        l = len(self.targets)  
+        self.V = self.pot*(abs(self.V) == abs(self.pot)**l) + (abs(self.V) != abs(self.pot)**l)*(self.V !=0)
+        
         self.N = N
         self.inside = self.N
         self.agents = np.array(self.agents, dtype = object)
@@ -393,7 +393,7 @@ class simulation:
     # This module allows for the creation of the potential V
     # with a given target 
     
-    def create_potential(self,var_room,var_config,target):
+    def create_potential(self,var_room,var_config,targets):
         
         pot = self.pot
         V = np.zeros((self.Ny,self.Nx)) + pot
@@ -432,12 +432,10 @@ class simulation:
         V[0,:] = pot
         V[-1,:] = pot
         
-        
-        target = var_room['targets'][target]
-        
-        target_X = abs(self.X_opt - target[0]) < target[2]/2
-        target_Y = abs(self.Y_opt - target[1]) < target[3]/2
-          
-        V[target_X*target_Y] = var_config['hjb_params']['target_potential']
+        for target in targets:
+            target = var_room['targets'][target]
+            target_X = abs(self.X_opt - target[0]) < target[2]/2
+            target_Y = abs(self.Y_opt - target[1]) < target[3]/2
+            V[target_X*target_Y] = var_config['hjb_params']['target_potential']
         
         return V

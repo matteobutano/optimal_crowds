@@ -5,7 +5,6 @@
 # Modules are imported 
 
 import numpy as np
-import matplotlib.pyplot as plt
 
 # The 'ped' class represent a pedestrian agent of the agent-based simulation. 
 # This class allows for the monitoring of all the main features of a walking pedestrians
@@ -13,7 +12,7 @@ import matplotlib.pyplot as plt
 # environment agents are subjected to.  
   
 class ped:   
-    def __init__(self,X,Y,V,target,x,y,vx,vy,targets,room_length,room_height,des_v,a_min,tau_a,b_min,b_max,eta):
+    def __init__(self,X,Y,V,target,targets,x,y,vx,vy,room_length,room_height,des_v,a_min,tau_a,b_min,b_max,eta):
         
         # Parameters are passed as argument to allow greater agents personalization
         
@@ -37,13 +36,13 @@ class ped:
         
         self.target = target
         
+        # The agent knows all the exits
+        
+        self.targets = targets
+        
         # Agents keep track of time
         
         self.time = 0
-        
-        # Agents know the available escapes
-        
-        self.targets = targets
         
         # Agents know the room main features
         
@@ -75,9 +74,12 @@ class ped:
     
     def check_status(self):
         x,y = self.position()
-        door = self.look_target()
-        if abs(x-door[0]) < door[2]*0.5 and abs(y-door[1]) < door[3]*0.5  :
-            self.status = False
+        
+        for target in self.targets:
+            door = self.targets[target]
+            
+            if abs(x-door[0]) < door[2]*0.5 and abs(y-door[1]) < door[3]*0.5  :
+                self.status = False
               
     # The following two methods give the present position and velocity of the agent
     
