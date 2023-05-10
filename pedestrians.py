@@ -12,7 +12,7 @@ import numpy as np
 # environment agents are subjected to.  
   
 class ped:   
-    def __init__(self,X,Y,V,target,targets,x,y,vx,vy,room_length,room_height,des_v,a_min,tau_a,b_min,b_max,eta):
+    def __init__(self,X,Y,V,target,all_targets,possible_targets,x,y,vx,vy,room_length,room_height,des_v,a_min,tau_a,b_min,b_max,eta):
         
         # Parameters are passed as argument to allow greater agents personalization
         
@@ -38,7 +38,8 @@ class ped:
         
         # The agent knows all the exits
         
-        self.targets = targets
+        self.possible_targets = possible_targets
+        self.all_targets = all_targets
         
         # Agents keep track of time
         
@@ -63,20 +64,14 @@ class ped:
         self.Y = Y
         self.V = V
         
-    # This method acquire's the current target's main features
-    
-    def look_target(self):
-        x_door,y_door = self.targets[self.target][:2]
-        door_width_x,door_width_y = self.targets[self.target][2:4]
-        return (x_door,y_door, door_width_x,door_width_y)
         
     # This method check wether the agent is still to be considered inside the room
     
     def check_status(self):
         x,y = self.position()
         
-        for target in self.targets:
-            door = self.targets[target]
+        for target in self.possible_targets:
+            door = self.all_targets[target]
             
             if abs(x-door[0]) < door[2]*0.5 and abs(y-door[1]) < door[3]*0.5  :
                 self.status = False

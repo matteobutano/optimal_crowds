@@ -116,7 +116,8 @@ class simulation:
                 # dynamics, such as speed, position, direction, target, evacuation time etc.
                    
                 self.agents.append(pedestrians.ped(self.Y_opt,self.X_opt,self.Vs[key],key, 
-                                                   var_room['targets'],xs[i], ys[i], 0, 0, 
+                                                   var_room['targets'],targets,
+                                                   xs[i], ys[i], 0, 0, 
                                                    self.room_length, self.room_height,
                                                    self.des_v,self.a_min,self.tau_a,
                                                    self.b_min,self.b_max,self.eta))
