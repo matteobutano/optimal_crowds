@@ -70,7 +70,6 @@ class simulation:
         
         self.relaxation = var_config['relaxation']
         self.noise_intensity = var_config['hjb_params']['sigma']
-        self.des_v = var_config['des_v']
         self.a_min = var_config['b_min']
         self.tau_a = var_config['tau_a']
         self.b_min = var_config['b_min']
@@ -107,6 +106,7 @@ class simulation:
               
             xs = np.random.uniform(box[0] - box[2]/2,box[0] + box[2]/2,loc_N)
             ys = np.random.uniform(box[1] - box[3]/2,box[1] + box[3]/2,loc_N)
+            v_des_all = np.random.uniform(0.5,2,loc_N)
                 
             for i in range(loc_N):
                     
@@ -119,7 +119,7 @@ class simulation:
                                                    var_room['targets'],targets,
                                                    xs[i], ys[i], 0, 0, 
                                                    self.room_length, self.room_height,
-                                                   self.des_v,self.a_min,self.tau_a,
+                                                   v_des_all[i],self.a_min,self.tau_a,
                                                    self.b_min,self.b_max,self.eta))
             
         
@@ -155,7 +155,7 @@ class simulation:
                     direction = np.degrees(np.arctan2(vel_i[1],vel_i[0]))
             
                     a_i = agent.a_min + agent.tau_a * np.linalg.norm(vel_i)
-                    b_i = agent.b_max - (agent.b_max - agent.b_min)*np.minimum(np.linalg.norm(vel_i)/agent.des_v,1)
+                    b_i = agent.b_max - (agent.b_max - agent.b_min)*np.minimum(np.linalg.norm(vel_i)/agent.v_des,1)
                     
                     color_index = list(self.targets).index(agent.target)
                     
@@ -223,7 +223,7 @@ class simulation:
             
                 # We assign to the agent the velocity prescribed optimally by the HJB equation
                 
-                des_x, des_y  = self.targets[agent.target].choose_optimal_velocity(agent.position(), self.simu_step)
+                des_x, des_y  = agent.v_des*self.targets[agent.target].choose_optimal_velocity(agent.position(), self.simu_step)
                 
                 # We compute the repulsion from other agents
                 

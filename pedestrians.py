@@ -12,7 +12,7 @@ import numpy as np
 # environment agents are subjected to.  
   
 class ped:   
-    def __init__(self,X,Y,V,target,all_targets,possible_targets,x,y,vx,vy,room_length,room_height,des_v,a_min,tau_a,b_min,b_max,eta):
+    def __init__(self,X,Y,V,target,all_targets,possible_targets,x,y,vx,vy,room_length,room_height,v_des,a_min,tau_a,b_min,b_max,eta):
         
         # Parameters are passed as argument to allow greater agents personalization
         
@@ -21,7 +21,7 @@ class ped:
         
         # Repulsion parameters 
         
-        self.des_v = des_v
+        self.v_des = v_des
         self.a_min = b_min
         self.tau_a = tau_a
         self.b_min = b_min
@@ -115,9 +115,9 @@ class ped:
         vel_i = self.velocity()
         
         a_i = self.a_min + self.tau_a * np.linalg.norm(vel_i)
-        b_i = self.b_max - (self.b_max - self.b_min)*np.minimum(np.linalg.norm(vel_i)/self.des_v,1)
+        b_i = self.b_max - (self.b_max - self.b_min)*np.minimum(np.linalg.norm(vel_i)/self.v_des,1)
         a_j = self.a_min + self.tau_a * np.linalg.norm(vel_j)
-        b_j = self.b_max - (self.b_max - self.b_min)*np.minimum(np.linalg.norm(vel_j)/self.des_v,1)
+        b_j = self.b_max - (self.b_max - self.b_min)*np.minimum(np.linalg.norm(vel_j)/self.v_des,1)
         
         # First we compute the relative position of j
         
@@ -182,7 +182,7 @@ class ped:
         beta_i = np.arctan2(vel_i[1],vel_i[0])
         
         a_i = self.a_min + self.tau_a * np.linalg.norm(vel_i)
-        b_i = self.b_max - (self.b_max - self.b_min)*np.minimum(np.linalg.norm(vel_i)/self.des_v,1)
+        b_i = self.b_max - (self.b_max - self.b_min)*np.minimum(np.linalg.norm(vel_i)/self.v_des,1)
         
         q_i = 1/((np.cos(alpha_i-beta_i)/a_i)**2 + (np.sin(alpha_i-beta_i)/b_i)**2)
         
