@@ -3,7 +3,7 @@
 "dt": 0.02,
 "grid_step":0.1,
 
-"des_v": 1,
+"v_max": 2,
 "relaxation": 0.1,
 "sigma_convolution": 0.5,
 "a_min": 0.18,

@@ -78,6 +78,7 @@ class simulation:
         self.b_max = var_config['b_max']
         self.eta = var_config['eta']
         self.repulsion_cutoff = var_config['repulsion_cutoff']
+        self.v_max = var_config['v_max']
         
         
         # We initialize the crowd, we will count the number of agents and create 
@@ -265,7 +266,12 @@ class simulation:
                 
                 # We update agent position
                 
-                agent.evolve(x, y, vx, vy, des_x, des_y, dt)
+                norm = np.sqrt(vx**2 + vy**2)
+                
+                if norm < self.v_max:
+                    agent.evolve(x, y, vx, vy, des_x, des_y, dt)
+                else:
+                    agent.evolve(x, y, vx*(self.v_max/norm), vy*(self.v_max/norm), des_x, des_y, dt)
                 
                 # We finally check if agent has left the room
                 
