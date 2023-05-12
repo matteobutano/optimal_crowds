@@ -12,7 +12,7 @@ import numpy as np
 # environment agents are subjected to.  
   
 class ped:   
-    def __init__(self,X,Y,V,target,all_targets,possible_targets,x,y,vx,vy,room_length,room_height,v_des,a_min,tau_a,b_min,b_max,eta):
+    def __init__(self,X,Y,step,V,target,all_targets,possible_targets,x,y,vx,vy,room_length,room_height,v_des,a_min,tau_a,b_min,b_max,eta):
         
         # Parameters are passed as argument to allow greater agents personalization
         
@@ -55,6 +55,7 @@ class ped:
         
         self.traj = []
         self.vels = []
+        self.v_des_list = []
         self.traj.append(self.initial_position)
         self.vels.append(self.initial_velocity)
         
@@ -63,7 +64,7 @@ class ped:
         self.X = X
         self.Y = Y
         self.V = V
-        
+        self.step = step
         
     # This method check wether the agent is still to be considered inside the room
     
@@ -86,9 +87,11 @@ class ped:
     
     # This method add a given position and velocity to the agent's history
     
-    def evolve(self,x,y,vx,vy,dt):
+    def evolve(self, x, y, vx, vy, v_des_x, v_des_y, dt):
+        
         self.traj.append(np.array((x,y),dtype = float))
         self.vels.append(np.array((vx,vy),dtype = float))
+        self.v_des_list.append(np.array((v_des_x,v_des_y),dtype = float))
         self.time += dt
     
     # The 'evac_time' method gives the evacuation time of an agent if he has already left the room
@@ -142,10 +145,17 @@ class ped:
         beta_i = np.arctan2(vel_i[1],vel_i[0])
         alpha_j = np.arctan2(-R[1],-R[0])
         beta_j = np.arctan2(vel_j[1],vel_j[0])
-        q_i = 1/((np.cos(alpha_i-beta_i)/a_i)**2 + (np.sin(alpha_i-beta_i)/b_i)**2)
-        q_j = 1/((np.cos(alpha_j-beta_j)/a_j)**2 + (np.sin(alpha_j-beta_j)/b_j)**2)
+        q_i = np.sqrt(1/((np.cos(alpha_i-beta_i)/a_i)**2 + (np.sin(alpha_i-beta_i)/b_i)**2))
+        q_j = np.sqrt(1/((np.cos(alpha_j-beta_j)/a_j)**2 + (np.sin(alpha_j-beta_j)/b_j)**2))
         dist = np.linalg.norm(R) - q_i - q_j 
         
+        e_i = (((self.X-pos_i[0])*np.cos(beta_i) - (self.Y-pos_i[1])*np.sin(beta_i)) /a_i)**2 +\
+            (((self.X-pos_i[0])*np.sin(beta_i) + (self.Y-pos_i[1])*np.cos(beta_i))/b_i)**2 < 1
+        e_j = (((self.X-pos_j[0])*np.cos(beta_j) - (self.Y-pos_j[1])*np.sin(beta_j)) /a_j)**2 +\
+            (((self.X-pos_j[0])*np.sin(beta_j) + (self.Y-pos_j[1])*np.cos(beta_j))/b_j)**2 < 1
+        
+        overlap = sum(sum(e_i*e_j))*self.step**2/(np.pi*a_i*b_i)
+    
         # Finally we compute the repulsion, that kicks in only when two ellypses 
         # super pose
         
@@ -154,7 +164,7 @@ class ped:
         if rep < 0 :
             raise ValueError('Attractive repulsion', rep)
         
-        return -rep*R
+        return -rep*R,overlap
         
     def wall_repulsion(self,X,Y,V):
         

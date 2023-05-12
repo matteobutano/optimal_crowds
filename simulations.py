@@ -50,6 +50,8 @@ class simulation:
         
         self.dx = self.grid_step
         self.dy = self.grid_step
+        
+        self.overlap = []
 
         self.X_opt, self.Y_opt = np.meshgrid(np.linspace(0,self.room_length,self.Nx)
                                              ,np.linspace(0,self.room_height,self.Ny))
@@ -115,7 +117,8 @@ class simulation:
                 # which allows us to monitor the various parameters of each agent's
                 # dynamics, such as speed, position, direction, target, evacuation time etc.
                    
-                self.agents.append(pedestrians.ped(self.Y_opt,self.X_opt,self.Vs[key],key, 
+                self.agents.append(pedestrians.ped(self.Y_opt,self.X_opt,self.grid_step,
+                                                   self.Vs[key],key, 
                                                    var_room['targets'],targets,
                                                    xs[i], ys[i], 0, 0, 
                                                    self.room_length, self.room_height,
@@ -232,7 +235,11 @@ class simulation:
                     pos_j = self.agents[j].position()
                     vel_j = self.agents[j].velocity()
                     if self.agents[j].status and j != i and agent.distance(pos_j) < self.repulsion_cutoff:
-                        repulsion = repulsion + np.array(agent.agents_repulsion(pos_j,vel_j),dtype = float)
+                        rep = agent.agents_repulsion(pos_j,vel_j)
+                        overlap = rep[1]
+                        if overlap > 0:
+                            self.overlap.append(overlap)
+                        repulsion = repulsion + np.array(rep[0],dtype = float)
                         
                 # We compute repulsion from walls
                 
@@ -258,7 +265,7 @@ class simulation:
                 
                 # We update agent position
                 
-                agent.evolve(x, y, vx, vy, dt)
+                agent.evolve(x, y, vx, vy, des_x, des_y, dt)
                 
                 # We finally check if agent has left the room
                 
