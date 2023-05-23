@@ -1,4 +1,4 @@
-# author Matteo Butano
+# author: Matteo Butano
 # email: matteo.butano@universite-paris-saclay.fr
 # institution: CNRS, Université Paris-Saclay, LPTMS
 
@@ -11,6 +11,8 @@ from optimal_crowds import pedestrians
 from optimal_crowds import optimals
 import json
 import seaborn as sns
+import warnings
+warnings.filterwarnings("ignore")
 
 # The simulation class creates the simulation room and makes it evolve 
 # accordingly to the mode indicated as argument. The 'abm' creates an agent based model 
@@ -58,7 +60,7 @@ class simulation:
         
         self.sigma_convolution = var_config['sigma_convolution']
         self.pot = var_config['hjb_params']['wall_potential']
-        self.lim = 10e-6
+        self.lim = 10e-3
         
         # Here the time discretization is defined
         
@@ -226,7 +228,7 @@ class simulation:
             if agent.status:
             
                 # We assign to the agent the velocity prescribed optimally by the HJB equation
-                
+            
                 des_x, des_y  = agent.v_des*self.targets[agent.target].choose_optimal_velocity(agent.position(), self.simu_step)
                 
                 # We compute the repulsion from other agents

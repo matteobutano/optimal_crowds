@@ -11,11 +11,11 @@
 "b_max": 0.25,
 "tau_a": 0.53,
 "eta": 0.1,
-"repulsion_cutoff": 3,
+"repulsion_cutoff": 4,
 
 "hjb_params":{
-    "sigma": 0.3,
-    "mu": 3,
+    "sigma": 0.2,
+    "mu": 5,
     "wall_potential": -100,
     "target_potential": 1
 }

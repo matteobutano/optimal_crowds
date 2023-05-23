@@ -1,4 +1,4 @@
-# author Matteo Butano
+# author: Matteo Butano
 # email: matteo.butano@universite-paris-saclay.fr
 # institution: CNRS, Université Paris-Saclay, LPTMS
 
@@ -137,8 +137,8 @@ class ped:
         k = 0
         
         if np.linalg.norm(vel_i) > 0:
-            k = 0.5*(dot(vel_i,e) + abs(dot(vel_i,e)))/np.linalg.norm(vel_i)
-        
+            k = np.maximum(dot(vel_i,e)/np.linalg.norm(vel_i) - np.cos(0.7*np.pi),0)/(1- np.cos(0.7*np.pi))
+         
         # Now we compute the distance between ellypses along direction of the centers
     
         alpha_i = np.arctan2(R[1],R[0])
@@ -160,10 +160,7 @@ class ped:
         # super pose
         
         rep = k * np.exp(- np.maximum(dist,0)/(self.eta*(1 + v_rel)))
-        
-        if rep < 0 :
-            raise ValueError('Attractive repulsion', rep)
-        
+       
         return -rep*R,overlap
         
     def wall_repulsion(self,X,Y,V):
@@ -200,4 +197,4 @@ class ped:
         
         rep = np.exp(-np.maximum(dist,0)/(self.eta*(1 + v_rel)))
         
-        return -rep*R
+        return -2*rep*R

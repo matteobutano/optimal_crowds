@@ -1,4 +1,4 @@
-# author Matteo Butano
+# author: Matteo Butano
 # email: matteo.butano@universite-paris-saclay.fr
 # institution: CNRS, Université Paris-Saclay, LPTMS
 
@@ -73,7 +73,7 @@ class optimals:
             
         self.phi_T = self.phi_T.reshape(self.Nx*self.Ny)
         
-        self.lim = 10e-10
+        self.lim = 10e-3
         
     # The 'draw_optimal_velocities' method draws the velocities obtained 
     # by solving the HJB equation in the Cole-Hopf transformation. 
@@ -130,23 +130,24 @@ class optimals:
         
         def vels(phi,mu):
             
-            lim = self.lim
-            
             phi_temp = phi.reshape(ny,nx).copy()
+            
+            phi_temp = phi_temp*(phi_temp > self.lim) + self.lim*(phi_temp < self.lim)
             
             grad_x = (phi_temp[1:-1,2:] - phi_temp[1:-1,:-2])/(2*dx)
             grad_y = (phi_temp[2:,1:-1] - phi_temp[:-2,1:-1])/(2*dy)
             
-            phi_den = phi_temp[1:-1,1:-1]*(phi_temp[1:-1,1:-1] > lim) + lim*(phi_temp[1:-1,1:-1]<lim)
-            
-            vx = grad_x/(mu*phi_den)
-            vy = grad_y/(mu*phi_den)
+            phi_temp = phi_temp[1:-1,1:-1]*(phi_temp[1:-1,1:-1] > self.lim) + self.lim*(phi_temp[1:-1,1:-1]<self.lim)
+        
+            vx = grad_x/(mu*phi_temp)
+            vy = grad_y/(mu*phi_temp)
             
             norm = np.sqrt(vx**2+vy**2)
             
-            norm= norm*(norm > lim) + lim*(norm < lim)
-        
-            return vx/norm,vy/norm
+            den = norm*(norm > self.lim) +  (norm < self.lim)
+            
+            return (vx*(norm > self.lim))/den, (vy*(norm > self.lim))/den
+            
         
         phi_T = self.phi_T
       
@@ -173,8 +174,9 @@ class optimals:
     
     def choose_optimal_velocity(self,pos,t):
         x,y = pos
+        
         if t >= self.nt_opt-1:
-            return (0.,0.)
+            return np.array((0.,0.),dtype = float)
         else: 
             if x < self.room_length-self.dx:
                 j = int(x//self.dx)
