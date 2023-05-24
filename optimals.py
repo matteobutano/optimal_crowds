@@ -180,14 +180,18 @@ class optimals:
         else: 
             if x < self.room_length-self.dx:
                 j = int(x//self.dx)
+                if x > self.dx:
+                    j = [j,j+1]
             else:
                 j = self.Nx - 3
             if y < self.room_height-self.dy:
                 i = int(y//self.dy)
+                if y > self.dy:
+                    i = [i,i+1]
             else:
                 i = self.Ny - 3
     
-            vx = self.vx_opt[t][i,j]
-            vy = self.vy_opt[t][i,j]
+            vx = np.mean(self.vx_opt[t][i,j])
+            vy = np.mean(self.vy_opt[t][i,j])
             
             return np.array((vx ,vy), dtype = float)
