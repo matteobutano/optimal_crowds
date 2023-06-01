@@ -13,6 +13,55 @@ import numpy as np
   
 class ped:   
     def __init__(self,X,Y,step,V,target,all_targets,possible_targets,x,y,vx,vy,room_length,room_height,v_des,a_min,tau_a,b_min,b_max,eta):
+        '''
+        Creates one pedestrian object.
+
+        Parameters
+        ----------
+        X : numpy.array
+            x coordinates of the simulation grid.
+        Y : numpy.array
+            y coordinates of the simulation grid.
+        step : float
+            Size of the grid step.
+        V : numpy.array
+            Matrix containing the potential.
+        target : str
+            Name of target.
+        all_targets : dict 
+            Dictionary of all targets in the room.
+        possible_targets : dict
+            List of available target for the this pedestrian.
+        x : float
+            Inital position's x coordinate.
+        y : float
+            Inital position's y coordinate.
+        vx : float
+            Inital velocity's x coordinate.
+        vy : float
+            Inital velocity's y coordinate.
+        room_length : float
+            Length of the room.
+        room_height : float
+            Height of the room.
+        v_des : float
+            Desired speed.
+        a_min : float
+            Min value of the agent's ellypse major semiax.
+        tau_a : float
+            Incremental factor of ellypse major semiax.
+        b_min : float
+            Min value of the agent's ellypse minor semiax.
+        b_max : float
+            Max value of the agent's ellypse minor semiax.
+        eta : float
+            Repulsion intensity.
+
+        Returns
+        -------
+        None.
+
+        '''
         
         # Parameters are passed as argument to allow greater agents personalization
         
@@ -55,7 +104,7 @@ class ped:
         
         self.traj = []
         self.vels = []
-        self.v_des_list = []
+        
         self.traj.append(self.initial_position)
         self.vels.append(self.initial_velocity)
         
@@ -69,6 +118,14 @@ class ped:
     # This method check wether the agent is still to be considered inside the room
     
     def check_status(self):
+        '''
+        Check if ped is still in the room. If it is not, it changes the flag.
+
+        Returns
+        -------
+        None.
+
+        '''
         x,y = self.position()
         
         for target in self.possible_targets:
@@ -80,40 +137,104 @@ class ped:
     # The following two methods give the present position and velocity of the agent
     
     def position(self):
+        '''
+        Return ped current position.
+
+        Returns
+        -------
+        numpy.array
+            Ped current position.
+
+        '''
         return np.array(self.traj[-1],dtype = float)
     
     def velocity(self):
+        '''
+        Return ped current velocity.
+
+        Returns
+        -------
+        numpy.array
+            Ped current velocity.
+
+        '''
         return np.array(self.vels[-1],dtype = float)
     
     # This method add a given position and velocity to the agent's history
     
-    def evolve(self, x, y, vx, vy, v_des_x, v_des_y, dt):
+    def evolve(self, x, y, vx, vy, dt):
+        '''
+        Update pedestrian main parameters.
+
+        Parameters
+        ----------
+        x : float
+            New agent's position x coordinate.
+        y : float
+            New agent's position y coordinate.
+        vx : float
+            New agent's velocity x coordinate.
+        vy : float
+            New agent's velocity y coordinate.
+        dt : float
+            Time step.
+
+        Returns
+        -------
+        None.
+
+        '''
         
         self.traj.append(np.array((x,y),dtype = float))
         self.vels.append(np.array((vx,vy),dtype = float))
-        self.v_des_list.append(np.array((v_des_x,v_des_y),dtype = float))
         self.time += dt
     
     # The 'evac_time' method gives the evacuation time of an agent if he has already left the room
     
     def evac_time(self):
+        '''
+        Return the time needed to evacuate the room.
+
+        Raises
+        ------
+        ValueError
+            Pedestrian must have reached the exit to have an exit time.
+
+        Returns
+        -------
+        float
+            Total time needed to exit room.
+
+        '''
         if self.status:
             raise ValueError('This pedestrian has not exited the room yet!')
         return self.time
     
-    def distance(self,pos):
-        x,y = pos
-        return np.sqrt((self.position()[0]-x)**2 + (self.position()[1]-y)**2)
-    
     # The following two methods compute the repulsion's intensity and direction. 
     
     def agents_repulsion(self,pos_j,vel_j):
+        '''
+        Compute the repulsion caused the presence of pedestrian j.
+
+        Parameters
+        ----------
+        pos_j : numpy.array
+            Coordinates of pedestrian j's position.
+        vel_j : numpy.array
+            Pedestrian j's velocity.
+
+        Returns
+        -------
+        numpy.array
+            Repulsion vector.
+
+        '''
         
         # Given a position, (usually another agent's), the repulsion is computed
         # generalized centrifugal force model. 
         
         dot = lambda a,b: a[0]*b[0] + a[1]*b[1]
-
+    
         pos_i = self.position()
         vel_i = self.velocity()
         
@@ -149,21 +270,33 @@ class ped:
         q_j = np.sqrt(1/((np.cos(alpha_j-beta_j)/a_j)**2 + (np.sin(alpha_j-beta_j)/b_j)**2))
         dist = np.linalg.norm(R) - q_i - q_j 
         
-        e_i = (((self.X-pos_i[0])*np.cos(beta_i) - (self.Y-pos_i[1])*np.sin(beta_i)) /a_i)**2 +\
-            (((self.X-pos_i[0])*np.sin(beta_i) + (self.Y-pos_i[1])*np.cos(beta_i))/b_i)**2 < 1
-        e_j = (((self.X-pos_j[0])*np.cos(beta_j) - (self.Y-pos_j[1])*np.sin(beta_j)) /a_j)**2 +\
-            (((self.X-pos_j[0])*np.sin(beta_j) + (self.Y-pos_j[1])*np.cos(beta_j))/b_j)**2 < 1
-        
-        overlap = sum(sum(e_i*e_j))*self.step**2/(np.pi*a_i*b_i)
     
         # Finally we compute the repulsion, that kicks in only when two ellypses 
         # super pose
-        
+       
         rep = k * np.exp(- np.maximum(dist,0)/(self.eta*(1 + v_rel)))
        
-        return -rep*R,overlap
+        return -rep*R
         
     def wall_repulsion(self,X,Y,V):
+        '''
+        Compute the repulsion cause by walls and obstacles
+
+        Parameters
+        ----------
+        X : numpy.array
+            Grid x coordinates.
+        Y : numpy.array
+            Grid y coordinates.
+        V : numpy.array
+            Potential.
+
+        Returns
+        -------
+        numpy.array
+            Repulsion vector.
+
+        '''
         
         # In order to compute walls repulsion, we calculate the closest point
         # belonging to the potential V and compute the vector along that direction pointing
@@ -197,4 +330,26 @@ class ped:
         
         rep = np.exp(-np.maximum(dist,0)/(self.eta*(1 + v_rel)))
         
-        return -2*rep*R
+        return np.array(-2*rep*R,dtype=float)
+    
+    def distance(self,pos):
+        '''
+        Compute the distance between the pedestrian and a given point in space.
+
+        Parameters
+        ----------
+        pos : numpy.array
+            Given point in space.
+
+        Returns
+        -------
+        float
+            Distance.
+
+        '''
+        
+        x,y = self.position()
+        
+        d = np.sqrt((pos[0]-x)**2 + (pos[1]-y)**2)
+        
+        return d

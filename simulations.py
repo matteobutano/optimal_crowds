@@ -2,11 +2,11 @@
 # email: matteo.butano@universite-paris-saclay.fr
 # institution: CNRS, Université Paris-Saclay, LPTMS
 
-# Modules are imported 
+# Modules are imported
 
 import numpy as np
 import matplotlib.pyplot as plt
-from  matplotlib.patches import Ellipse,Patch
+from matplotlib.patches import Ellipse, Patch
 from optimal_crowds import pedestrians
 from optimal_crowds import optimals
 import json
@@ -14,30 +14,41 @@ import seaborn as sns
 import warnings
 warnings.filterwarnings("ignore")
 
-# The simulation class creates the simulation room and makes it evolve 
-# accordingly to the mode indicated as argument. The 'abm' creates an agent based model 
-# simulation where agents strive to reach the exit while avoiding obstacle, always being 
-# guided by the optimal velocities calculated by solving the HJB equation. 
 
 class simulation:
-    
-    def __init__(self,room,T):
-        
+
+    def __init__(self, room, T):
+        """
+        Initialize the room and the agents
+
+        Parameters
+        ----------
+        room : str
+            name without extension of the .json file containing the room's description.
+        T : float
+            total time allowed for evacuation.
+
+        Returns
+        -------
+        None.
+
+        """
+
         # The config.json contains the parameters of the abm agents and
-        # of the HJB equation used to guide their motion 
-    
+        # of the HJB equation used to guide their motion
+
         with open('optimal_crowds/config.json') as f:
             var_config = json.loads(f.read())
-        
-        # The door.json file contains the description of the simulation room. 
-        
+
+        # The door.json file contains the description of the simulation room.
+
         with open('rooms/'+room+'.json') as f:
             var_room = json.loads(f.read())
-        
+
         # We first create the simulation room, by determining its length,
         # i.e. its extension on the x-axis, its height, i.e. its extension
-        # on the y-axis 
-        
+        # on the y-axis
+
         self.room_length = var_room['room_length']
         self.room_height = var_room['room_height']
         
@@ -52,9 +63,7 @@ class simulation:
         
         self.dx = self.grid_step
         self.dy = self.grid_step
-        
-        self.overlap = []
-
+      
         self.X_opt, self.Y_opt = np.meshgrid(np.linspace(0,self.room_length,self.Nx)
                                              ,np.linspace(0,self.room_height,self.Ny))
         
@@ -137,10 +146,25 @@ class simulation:
         self.agents = np.array(self.agents, dtype = object)
                
         print('ABM simulation room created!')
-                     
-    # The 'draw' method allows for visualisation of the simulation room
     
     def draw(self,mode = 'scatter'):
+        """
+        Draw the current configuration of the room with walls and obstacles
+
+        Parameters
+        ----------
+        mode : str, optional
+            You can choose between:
+                    - scatter, where each agent's ellyptic shadow is plotted 
+                    - arrows, where each agent is plotted as an arrow pivoting along its position with lenght and direction given by its velocity
+                    - density, where the density of agents is plotted. 
+            The default is 'scatter'.
+
+        Returns
+        -------
+        None.
+
+        """
         
         plt.figure(figsize = (self.room_length,self.room_height))
         colors = sns.color_palette(n_colors=len(self.targets))
@@ -210,12 +234,23 @@ class simulation:
             title = 't = {:.2f}s exit = {}/{}'.format(self.time,self.N - self.inside,self.N)
             plt.title(title)
             plt.show()
-        
-                    
-    # The 'step' method puts together all the ingredients necessary to 
-    # evolve each agent's position and status in the simulation
             
     def step(self,dt,verbose =  False):
+        """
+        Computes and applies the new position and velocity for each agent 
+
+        Parameters
+        ----------
+        dt : float
+            the lenght of the time-step.
+        verbose : bool, optional
+            set to True to print current status of the evacuation. The default is False.
+
+        Returns
+        -------
+        None.
+
+        """
         
         # First, we summon each agent randomly
         
@@ -234,15 +269,16 @@ class simulation:
                 # We compute the repulsion from other agents
                 
                 repulsion = np.array((0, 0),dtype = float)
+                
                 for j in range(self.N):
                     pos_j = self.agents[j].position()
                     vel_j = self.agents[j].velocity()
+                    
                     if self.agents[j].status and j != i and agent.distance(pos_j) < self.repulsion_cutoff:
+                        
                         rep = agent.agents_repulsion(pos_j,vel_j)
-                        overlap = rep[1]
-                        if overlap > 0:
-                            self.overlap.append(overlap)
-                        repulsion = repulsion + np.array(rep[0],dtype = float)
+                        
+                        repulsion = repulsion + np.array(rep,dtype = float)
                         
                 # We compute repulsion from walls
                 
@@ -271,9 +307,9 @@ class simulation:
                 norm = np.sqrt(vx**2 + vy**2)
                 
                 if norm < self.v_max:
-                    agent.evolve(x, y, vx, vy, des_x, des_y, dt)
+                    agent.evolve(x, y, vx, vy, dt)
                 else:
-                    agent.evolve(x, y, vx*(self.v_max/norm), vy*(self.v_max/norm), des_x, des_y, dt)
+                    agent.evolve(x, y, vx*(self.v_max/norm), vy*(self.v_max/norm), dt)
                 
                 # We finally check if agent has left the room
                 
@@ -290,13 +326,28 @@ class simulation:
         
         if verbose:
             print('t = {:.2f}s exit = {}/{}'.format(self.time,self.N - self.inside,self.N)+10*' ',end='\n')
-            
-    # The method evac_times allows to obtain the evacuation time, 
-    # i.e., the time needed to exit the simulation room, for each agent.
-    # If the option draw is on, each agent's starting position is plotted as a dot
-    # whose color represents the time needed to evacuate the room        
                 
     def evac_times(self,draw = False):
+        """
+        Computes how long it took to each agent to exit the room.
+        
+        Parameters
+        ----------
+        draw : bool, optional
+            If set to True it plots the agents as dots in their initial position colored according to their evacuation time. The default is False.
+
+        Raises
+        ------
+        ValueError
+            If the evacuation is not complete some evacuation time cannot be computed.
+
+        Returns
+        -------
+        times : numpy.array
+            Evacuation times for all agents.
+
+        """
+        
         if self.inside > 0:
             raise ValueError('There are still people inside!')
         times = np.empty(self.N,dtype = float)
@@ -312,57 +363,95 @@ class simulation:
             plt.colorbar()
         else:
             return times
-        
-    # The 'initial_position' method extracts the initial position of each agent
-    # of the simulation and provides a list with all tuples 
             
     def initial_positions(self):
+        """
+        A numpy array containing all agents initial positions. 
+        
+        Returns
+        -------
+        xs : numpy.array
+            the x-values of agents initial positions
+        ys : numpy.array
+            the y-values of agents initial positions.
+
+        """
         xs = np.empty(self.N,dtype = float)
         ys = np.empty(self.N,dtype = float)
         for i, agent in enumerate(self.agents):
             xs[i] = agent.initial_position[0]
             ys[i] = agent.initial_position[1]
         return xs,ys
-
-    # The 'run' methods makes the simulation evolve depending on the selected mode. 
-    # In 'abm' mode, it applies a step of given time-step until all agents have exited 
-    # the room or until the simulation time is lower than the prescribed one. This 
-    # is because the optimal velocities are only computed up to the terminal time T.
     
     def run(self, verbose = False, draw = False, mode = 'scatter'):
+        """
+        Applies the 'step' method until the evacuation is complete or time is up
+
+        Parameters
+        ----------
+        verbose : bool, optional
+            Set to True to print the evacuation status at each time-step. The default is False.
+        draw : bool, optional
+            Set to True to plot the room and the agents configuration every 10 time-steps. The default is False.
+        mode : str, optional
+            Choose the type for the room plot. You can choose between:
+                - scatter, where each agent's ellyptic shadow is plotted 
+                - arrows, where each agent is plotted as an arrow pivoting along its position with lenght and direction given by its velocity
+                - density, where the density of agents is plotted. 
+            The default is 'scatter'. 
+
+        Returns
+        -------
+        None.
+
+        """
+
+        # Before starting the abm simulation, we compute the optimal velocities 
+        # by solving the HJB representing obstacles and targets.
         
-     # Before starting the abm simulation, we compute the optimal velocities 
-     # by solving the HJB representing obstacles and targets.
-        
-     for target in self.targets:
-         self.targets[target].compute_optimal_velocity()
+        for target in self.targets:
+            self.targets[target].compute_optimal_velocity()
             
-     while (self.inside > 0) & (self.time < self.T): 
-         # The abm simulation is updated one step at the time, 
-         # following the rules of the 'step' method
-                
-         self.step(self.dt,verbose = verbose)
-                
-         # Draw current state of the simulation 
-                
-         # and (int(self.time*100%10) == 0)
+        while (self.inside > 0) & (self.time < self.T): 
+            # The abm simulation is updated one step at the time, 
+            # following the rules of the 'step' method
             
-         if draw and (self.simu_step % 10) == 0 :
-             self.draw(mode)
-             plt.show()
-                    
-         # Print evacuation status
+            self.step(self.dt,verbose = verbose)
             
-     if self.inside == 0:
-        print('Evacuation complete in {:.2f}s!'.format(self.time))
-     else:
-        print('Evacuation failed!'+10*' ')
+            # Draw current state of the simulation 
+            
+            # and (int(self.time*100%10) == 0)
+            
+            if draw and (self.simu_step % 10) == 0 :
+                self.draw(mode)
+                plt.show()
+                
+        # Print evacuation status
          
-    # The 'gaussian_density' method computes the gaussian convolution of the agents
-    # positions. Each position is the center of a gaussian with standard deviation
-    # given by the 'sigma_convolution' paramter.      
+        if self.inside == 0:
+            print('Evacuation complete in {:.2f}s!'.format(self.time))
+        else:
+            print('Evacuation failed!'+10*' ')   
     
-    def gaussian_density(self,sigma,Nx,Ny):
+    def gaussian_density(self, sigma, Nx, Ny):
+        """
+        Compute a Gaussian convolution of the agents positions to give the density in each point of a grid underlying the room. 
+
+        Parameters
+        ----------
+        sigma : float
+            The std deviation of the gaussians used to compute the convolution.
+        Nx : int
+            Number of points along the x-axis of the grid.
+        Ny : TYPE
+            Number of points along the y-axis of the grid.
+
+        Returns
+        -------
+        d : numpy.array
+            Table with each element being the density in the corrisponding point of the grid.
+
+        """
      
         X,Y = np.meshgrid(np.linspace(0,self.room_length,self.Nx), 
                           np.linspace(0,self.room_height,self.Ny))
@@ -384,9 +473,15 @@ class simulation:
         
         return d
     
-    # This method draws the trajectory of the agents at the end of the simulation
-    
     def draw_final_trajectories(self):
+        """
+        Method that plots the room and the trajectories agents have followed to reach the exit. Each color represent a target.
+
+        Returns
+        -------
+        None.
+
+        """
         
         plt.figure(figsize = (self.room_length,self.room_height))
         colors = sns.color_palette(n_colors=len(self.targets))
@@ -405,11 +500,25 @@ class simulation:
         plt.legend(handles = handles, loc = 'upper right', frameon = False)
         plt.show()
         
-        
-    # This module allows for the creation of the potential V
-    # with a given target 
-    
     def create_potential(self,var_room,var_config,targets):
+        """
+        Build the grid representing the room's obstacles and walls, depending on the target, to be fed to the HJB equation
+
+        Parameters
+        ----------
+        var_room : dict
+            Contains the data to create the room.
+        var_config : dict
+            Contains the parameters describing the agents and those for the HJB equation.
+        targets : dict
+            List of targets.
+
+        Returns
+        -------
+        V : numpy.array
+            Matrix describing the potential simulating the room obstacles and walls.
+
+        """
         
         pot = self.pot
         V = np.zeros((self.Ny,self.Nx)) + pot

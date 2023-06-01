@@ -2,19 +2,34 @@
 # email: matteo.butano@universite-paris-saclay.fr
 # institution: CNRS, Université Paris-Saclay, LPTMS
 
-# Modules are imported 
-
 from scipy.integrate import solve_ivp
 import numpy as np
 import matplotlib.pyplot as plt
 import json
 
-# The 'optimals' class is used to solve the HJB equation giving the optimal
-# trajectories as per the cost functional cited in my pubblications.
 
 class optimals:
-    def __init__(self,room,V,T,target):
-        
+    def __init__(self, room, V, T, target):
+        """
+        Initialise the optimals object, containing the velocities prescribed as
+        per the solution of HJB associated to the simulation.
+
+        Parameters
+        ----------
+        room : str
+            name without extension of the .json file containing the room's description.
+        V : numpy.array
+            Matrix containing the potential describing the room walls and obstacles.
+        T : float
+            time limit for the evacuation.
+        target : list
+            List of targets.
+
+        Returns
+        -------
+        None.
+
+        """
         # The config.json contains the parameters of the abm agents and
         # of the HJB equation used to guide their motion 
         
@@ -74,18 +89,24 @@ class optimals:
         self.phi_T = self.phi_T.reshape(self.Nx*self.Ny)
         
         self.lim = 10e-3
-        
-    # The 'draw_optimal_velocities' method draws the velocities obtained 
-    # by solving the HJB equation in the Cole-Hopf transformation. 
-       
+           
     def draw_optimal_velocity(self):
-        
+        """
+        Quiver plot of HJB velocity for each point of the grid.
+
+        Returns
+        -------
+        None.
+
+        """
         for i in range(self.nt_opt-1):
-            
+
             if i < self.nt_opt-2:
-                plt.quiver(self.X_opt[1:-1,1:-1],self.Y_opt[1:-1,1:-1],self.vx_opt[i],self.vy_opt[i])
+                plt.quiver(self.X_opt[1:-1, 1:-1], self.Y_opt[1:-1, 1:-1],
+                           self.vx_opt[i], self.vy_opt[i])
             else:
                 plt.plot()
+
             plt.xlim([0,self.room_length])
             plt.ylim([0,self.room_height])
             title = 't = {:.2f}s'.format(i*self.dt)
@@ -97,6 +118,14 @@ class optimals:
     # and the doors to represent target doors. 
     
     def compute_optimal_velocity(self):
+        '''
+        Solve the HJB equation and compute the optimal velocities.
+
+        Returns
+        -------
+        None.
+
+        '''
         
         nx = self.Nx
         ny = self.Ny
@@ -173,6 +202,22 @@ class optimals:
     # by choosing the grid point correspoding to the floored position coordinates
     
     def choose_optimal_velocity(self,pos,t):
+        '''
+        Given the agent position, interpolates the optimal velocity at time t. 
+
+        Parameters
+        ----------
+        pos : numpy.array()
+            Coordinates of the agent's position.
+        t : float
+            Time.
+
+        Returns
+        -------
+        numpy.array()
+            Optimal velocity coordinates.
+
+        '''
         x,y = pos
         
         if t >= self.nt_opt-1:
