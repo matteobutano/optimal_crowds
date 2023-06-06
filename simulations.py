@@ -120,7 +120,7 @@ class simulation:
               
             xs = np.random.uniform(box[0] - box[2]/2,box[0] + box[2]/2,loc_N)
             ys = np.random.uniform(box[1] - box[3]/2,box[1] + box[3]/2,loc_N)
-            v_des_all = np.random.uniform(0.5,3.5,loc_N)
+            v_des_all = np.random.uniform(0.5,self.v_max,loc_N)
                 
             for i in range(loc_N):
                     
