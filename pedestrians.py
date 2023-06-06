@@ -274,7 +274,7 @@ class ped:
         # Finally we compute the repulsion, that kicks in only when two ellypses 
         # super pose
        
-        rep = k * np.exp(- np.maximum(dist,0)/(self.eta*(1 + v_rel)))
+        rep = np.minimum(k * np.exp(- dist/(self.eta*(1 + v_rel))),1)
        
         return -rep*R
         
@@ -328,9 +328,9 @@ class ped:
         
         dist = np.linalg.norm(R) - 2*q_i 
         
-        rep = np.exp(-np.maximum(dist,0)/(self.eta*(1 + v_rel)))
+        rep = np.minimum(np.exp(-dist/(self.eta*(1 + v_rel))),1)
         
-        return np.array(-2*rep*R,dtype=float)
+        return np.array(-rep*R,dtype=float)
     
     def distance(self,pos):
         '''

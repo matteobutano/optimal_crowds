@@ -120,7 +120,7 @@ class simulation:
               
             xs = np.random.uniform(box[0] - box[2]/2,box[0] + box[2]/2,loc_N)
             ys = np.random.uniform(box[1] - box[3]/2,box[1] + box[3]/2,loc_N)
-            v_des_all = np.random.uniform(0.5,2,loc_N)
+            v_des_all = np.random.uniform(0.5,3.5,loc_N)
                 
             for i in range(loc_N):
                     
@@ -286,7 +286,7 @@ class simulation:
                 
                 # We compute current velocity with random perturbation and repulsions
                 
-                current_velocity = agent.velocity() + 0.5*self.noise_intensity*np.random.normal(size = 2) + repulsion + wall_repulsion 
+                current_velocity = agent.velocity() + 0.001*self.noise_intensity*np.random.normal(size = 2) + repulsion + wall_repulsion 
         
                 # We compute acceleration towards desired velocity
                 
