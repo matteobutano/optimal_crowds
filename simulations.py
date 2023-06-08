@@ -88,6 +88,7 @@ class simulation:
         self.b_min = var_config['b_min']
         self.b_max = var_config['b_max']
         self.eta = var_config['eta']
+        self.eta_walls = var_config['eta_walls']
         self.repulsion_cutoff = var_config['repulsion_cutoff']
         self.v_max = var_config['v_max']
         
@@ -135,7 +136,7 @@ class simulation:
                                                    xs[i], ys[i], 0, 0, 
                                                    self.room_length, self.room_height,
                                                    v_des_all[i],self.a_min,self.tau_a,
-                                                   self.b_min,self.b_max,self.eta))
+                                                   self.b_min,self.b_max,self.eta,self.eta_walls))
             
         
         l = len(self.targets)  
@@ -286,7 +287,7 @@ class simulation:
                 
                 # We compute current velocity with random perturbation and repulsions
                 
-                current_velocity = agent.velocity() + 0.001*self.noise_intensity*np.random.normal(size = 2) + repulsion + wall_repulsion 
+                current_velocity = agent.velocity() + self.noise_intensity*np.random.normal(size = 2) + repulsion + wall_repulsion 
         
                 # We compute acceleration towards desired velocity
                 

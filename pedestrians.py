@@ -12,7 +12,7 @@ import numpy as np
 # environment agents are subjected to.  
   
 class ped:   
-    def __init__(self,X,Y,step,V,target,all_targets,possible_targets,x,y,vx,vy,room_length,room_height,v_des,a_min,tau_a,b_min,b_max,eta):
+    def __init__(self,X,Y,step,V,target,all_targets,possible_targets,x,y,vx,vy,room_length,room_height,v_des,a_min,tau_a,b_min,b_max,eta,eta_walls):
         '''
         Creates one pedestrian object.
 
@@ -76,6 +76,7 @@ class ped:
         self.b_min = b_min
         self.b_max = b_max
         self.eta = eta
+        self.eta_walls = eta_walls
         
         # The status determines wether an agent is still inside the room or not
         
@@ -309,7 +310,7 @@ class ped:
         
         distances = np.sqrt((X-pos_i[0])**2 + (Y-pos_i[1])**2)
         
-        ind = np.unravel_index(np.argmin(distances + V*10e10), distances.shape)
+        ind = np.unravel_index(np.argmin(distances + V*10e3), distances.shape)
         
         pos_wall = (X[ind],Y[ind])
         
@@ -326,11 +327,11 @@ class ped:
         
         q_i = 1/((np.cos(alpha_i-beta_i)/a_i)**2 + (np.sin(alpha_i-beta_i)/b_i)**2)
         
-        dist = np.linalg.norm(R) - 2*q_i 
+        dist = np.linalg.norm(R) - q_i 
         
-        rep = np.minimum(np.exp(-dist/(self.eta*(1 + v_rel))),1)
+        rep = np.minimum(np.exp(-dist/(self.eta_walls*(1 + v_rel))),1)
         
-        return np.array(-rep*R,dtype=float)
+        return -3*rep*R
     
     def distance(self,pos):
         '''
