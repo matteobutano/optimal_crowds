@@ -11,7 +11,7 @@
 "b_max": 0.25,
 "tau_a": 0.53,
 "eta": 0.15,
-"eta_walls": 0.25,
+"eta_walls": 0.15,
 "repulsion_cutoff": 4,
 
 "hjb_params":{

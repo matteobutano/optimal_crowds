@@ -139,7 +139,8 @@ class simulation:
                                                    self.b_min,self.b_max,self.eta,self.eta_walls))
             
         
-        l = len(self.targets)  
+        l = len(var_room['initial_boxes'])
+        
         self.V = self.pot*(abs(self.V) == abs(self.pot)**l) + (abs(self.V) != abs(self.pot)**l)*(self.V !=0)
         
         self.N = N
@@ -287,7 +288,7 @@ class simulation:
                 
                 # We compute current velocity with random perturbation and repulsions
                 
-                current_velocity = agent.velocity() + self.noise_intensity*np.random.normal(size = 2) + repulsion + wall_repulsion 
+                current_velocity = agent.velocity() + self.noise_intensity/2*np.random.normal(size = 2) + repulsion + wall_repulsion 
         
                 # We compute acceleration towards desired velocity
                 
