@@ -1,6 +1,6 @@
 # Optimal Crowds :crystal_ball:
 
-The optimal_crowds package lets you simulate the dynamics of a crowd of human beings moving through an environment towards a target. Once the room is set up, a HJB equation is solved to find the optimal trajectories leading to the targets. The actual dynamics is then simulated using a Agent-Based Model where agents strive the follow the optimally chosen trajectories and avoid obstacles and other pedestrians via social-force interactions. 
+The optimal_crowds package simulates the dynamics of a crowd of human beings moving through an environment towards a target. Once the room is set up, an HJB equation analogous to that found in [Bonnemain et al.](https://arxiv.org/pdf/2201.08592) is solved to find the optimal trajectories leading to the targets. The motion of pedestrians is then simulated using a Agent-Based Model where agents strive the follow the optimally chosen trajectories and avoid obstacles and others via an adaptation of the Generalized Centrifugal-Force Model (GCFM) detailed in [Chraibi et al.](https://arxiv.org/pdf/1008.4297). 
 
 ### INSTALL 💻
 
