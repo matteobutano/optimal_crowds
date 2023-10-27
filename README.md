@@ -2,14 +2,14 @@
 
 The optimal_crowds package simulates the dynamics of a crowd of human beings moving through an environment towards a target. Once the room is set up, an HJB equation analogous to that found in [Bonnemain et al.](https://arxiv.org/pdf/2201.08592) is solved to find the optimal trajectories leading to the targets. The motion of pedestrians is then simulated using a Agent-Based Model where agents strive the follow the optimally chosen trajectories and avoid obstacles and others via an adaptation of the Generalized Centrifugal-Force Model (GCFM) detailed in [Chraibi et al.](https://arxiv.org/pdf/1008.4297). 
 
-### INSTALL 💻
+## INSTALL 💻
 
 To correctly set up your package: 
 - Have the python modules numpy, matplotlib, json and scipy installed
 - Clone the repository inside a directory, you can do that by using the command 'git clone https://github.com/matteobutano/optimal_crowds' in you favorite bash terminal 
 - Inside the directory where you cloned the repo, **not inside the repo itself**, create a folder named 'rooms', where you will place your room configurations 
 
-### CREATE YOUR ROOM 🔨
+## CREATE YOUR ROOM 🔨
 
 In the 'rooms' folder, you will place the .json files containing all the information about the configurations you wish to simulate. You can move the 'room_test.json' file from this repo to your 'rooms' folder and modify it. The main elements of the room configuration file are:
 - **room_legth** and **room_height**: the extension along the x and y axes of the simulation room
@@ -19,7 +19,13 @@ In the 'rooms' folder, you will place the .json files containing all the informa
 - **holes**: openings in walls. Each hole is an array telling in order: the the hole's center's x coordinate, y coordinate, horizontal width, vertical width 
 - **cylinders**: cylindrical obstacles in the simulation room. Each cylinder is an array telling in order: the cylinder's center's x coordinate, y coordinate, the cylinder radius
 
-### START YOUR FIRST SIMULATION ▶️
+### Preset Rooms 
+Here you can find a selection of rooms already configured: 
+- [exit_opposite.json](https://github.com/matteobutano/optimal_crowds/files/13188299/exit_opposite.json)
+- [metro_station.json](https://github.com/matteobutano/optimal_crowds/files/13188315/metro_station.json)
+- [slalom.json](https://github.com/matteobutano/optimal_crowds/files/13188317/slalom.json)
+
+## START YOUR FIRST SIMULATION ▶️
 
 In the directory where you cloned the 'optimal_control' repository, create a python script 'run.py' with instructions:
 1. **'from optimal_crowds import simulations'**, to import the simulation module 
@@ -28,7 +34,7 @@ In the directory where you cloned the 'optimal_control' repository, create a pyt
 4. **'simu.run(draw, verbose)'**, to execute the simulation , where: *draw* must be boolean. If True the simulation room and the agents are plotted at each time step; *verbose* must be a boolean. If True the simulation time in seconds and the number of exited agents are printed at each time step
 5. **'simu.draw_final_trajectories()'** to finally, plot the actual trajectory each agent followed to exit the simulation room using 
 
-### CONTRIBUTE 🏁
+## CONTRIBUTE 🏁
 
 If you like what this does, feel free to improve upon code. Just follow these steps to contribute:
 
