@@ -65,18 +65,17 @@ class optimals:
         
         self.sigma = var_config['hjb_params']['sigma']
         self.mu = var_config['hjb_params']['mu']
+        self.g = -0.01
         self.pot = var_config['hjb_params']['wall_potential']
        
         # Time discretization 
         
         self.dt = var_config['dt']
         self.T = T
-        self.nt_opt = round(self.T/self.dt)
+        self.t = 0
+        self.nt_opt = round((self.T - self.t)/self.dt)
             
         # Create boundary conditions and final cost
-         
-        self.vx_opt = np.empty((self.nt_opt-1,self.Ny-2,self.Nx-2))
-        self.vy_opt = np.empty((self.nt_opt-1,self.Ny-2,self.Nx-2))
         
         self.phi_T =  np.zeros((self.Ny,self.Nx),dtype = float) + 1
         
@@ -117,7 +116,7 @@ class optimals:
     # over the simulation room using the potential V to represent the walls
     # and the doors to represent target doors. 
     
-    def compute_optimal_velocity(self):
+    def compute_optimal_velocity(self,t,m):
         '''
         Solve the HJB equation and compute the optimal velocities.
 
@@ -126,14 +125,18 @@ class optimals:
         None.
 
         '''
-        
+       
         nx = self.Nx
         ny = self.Ny
         dx = self.dx
         dy = self.dy
+        
+        self.t = t
+        self.nt_opt = round((self.T - self.t)/self.dt)
+        
         nt = self.nt_opt
      
-        def hjb(t,phi):
+        def hjb(t,phi,m):
         
             phi_temp = np.empty((ny+2,nx+2))
             phi_temp[1:-1,1:-1] = phi.reshape(ny,nx).copy()
@@ -147,13 +150,33 @@ class optimals:
                               phi_temp[1:-1,:-2] + phi_temp[1:-1,2:] - \
                               4*phi_temp[1:-1,1:-1])/(dx*dy)
              
-            
             phi_temp[1:-1,1:-1] = -0.5*self.sigma**2*lap -\
-                ((self.V)*phi_temp[1:-1,1:-1])/(self.mu*self.sigma**2)
+                ((self.V + self.g*m)*phi_temp[1:-1,1:-1])/(self.mu*self.sigma**2)
                 
-            phi_temp[1:-1,1:-1][self.V<0] = 0
+            # phi_temp[1:-1,1:-1][self.V<0] = 0
          
             return phi_temp[1:-1,1:-1].reshape(nx*ny)
+        
+        def kfp(t,gamma,m):
+        
+            gamma_temp = np.empty((ny+2,nx+2))
+            gamma_temp[1:-1,1:-1] = gamma.reshape(ny,nx).copy()
+            
+            gamma_temp[0,:] = gamma_temp[2,:] 
+            gamma_temp[-1,:] = gamma_temp[-3,:]
+            gamma_temp[:,-1] =  gamma_temp[:,-3] 
+            gamma_temp[:,0]  =  gamma_temp[:,2]  
+            
+            lap = (gamma_temp[:-2,1:-1] + gamma_temp[2:,1:-1] + \
+                              gamma_temp[1:-1,:-2] + gamma_temp[1:-1,2:] - \
+                              4*gamma_temp[1:-1,1:-1])/(dx*dy)
+             
+            gamma_temp[1:-1,1:-1] = 0.5*self.sigma**2*lap +\
+                ((self.V + self.g*m)*gamma_temp[1:-1,1:-1])/(self.mu*self.sigma**2)
+                
+            # gamma_temp[1:-1,1:-1][self.V<0] = 0
+         
+            return gamma_temp[1:-1,1:-1].reshape(nx*ny)
         
         # We compute the optimal velocity using the Cole-Hopf version of the value function u
         
@@ -179,23 +202,46 @@ class optimals:
             
         
         phi_T = self.phi_T
+        gamma_0 = self.phi_T.copy()
       
         # We choose the integration time span and the time discretization
        
-        t_span = (self.T,0)
-        t_events = np.linspace(self.T,0,self.nt_opt)
-
-        sol = solve_ivp(hjb, t_span, phi_T, method ='RK45',t_eval = t_events)
+        t_span_phi = (self.T,self.t)
+        t_events_phi = np.linspace(self.T,self.t,nt)
         
+        t_span_gamma = (self.t,self.T)
+        t_events_gamma = np.linspace(self.t,self.T,nt)
+        print(t_span_gamma,  t_events_gamma)
+        
+        print('Compute Phi')
+        
+        sol_phi = solve_ivp(hjb, t_span_phi, phi_T, method ='RK45',t_eval = t_events_phi,args = (m,))
+        
+        print('Compute Gamma')
+        
+        sol_gamma = solve_ivp(kfp, t_span_gamma, gamma_0, method ='RK45',t_eval = t_events_gamma,args = (m,))
+        
+        m_new = np.flip(sol_phi.y,axis = 1)*sol_gamma.y
+        
+        for i in np.arange(0,nt):
+            
+            plt.imshow(m_new[:,i].reshape(ny,nx))
+            plt.clim(0,1)
+            plt.colorbar()
+            plt.show()
+            
         # We create the floor field prescribing agents velocity 
         
-        for i in np.arange(nt-1,0,-1):
+        self.vx_opt = np.empty((self.nt_opt-1,self.Ny-2,self.Nx-2))
+        self.vy_opt = np.empty((self.nt_opt-1,self.Ny-2,self.Nx-2))
+        
+        # for i in np.arange(nt-1,0,-1):
             
-            vx,vy = vels(sol.y[:,nt - i ],self.mu)
-            self.vx_opt[i-1] = vx
-            self.vy_opt[i-1] = vy
+        #     vx,vy = vels(sol_phi.y[:,nt - i],self.mu)
+        #     self.vx_opt[i-1] = vx
+        #     self.vy_opt[i-1] = vy
 
-        print('Optimal trajectories have been learnt for ' + self.target )
+        print('Optimal trajectories ready for ' + self.target )
     
     # Given an agent's position, the 'choose_optimal_velocity' method
     # assings the corresponding optimal velocity at a given time 

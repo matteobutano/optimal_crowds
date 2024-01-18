@@ -228,7 +228,7 @@ class simulation:
             
         # Where the gaussian convolution of the agents position is computed  
             
-            d = self.gaussian_density(self.sigma_convolution, self.Nx, self.Ny)
+            d = self.gaussian_density(self.sigma_convolution)
             plt.imshow(np.flip(self.V/self.pot+ d,axis = 0) ,extent=[0,self.room_length,0,self.room_height])
             plt.xlim([0,self.room_length])
             plt.ylim([0,self.room_height])
@@ -407,14 +407,15 @@ class simulation:
         None.
 
         """
-
-        # Before starting the abm simulation, we compute the optimal velocities 
-        # by solving the HJB representing obstacles and targets.
-        
-        for target in self.targets:
-            self.targets[target].compute_optimal_velocity()
             
         while (self.inside > 0) & (self.time < self.T): 
+            
+            # We compute the optimal trajectories once every 10 dt
+            
+            if self.simu_step % 250 == 0:
+                for target in self.targets:
+                    self.targets[target].compute_optimal_velocity(self.time,self.gaussian_density(self.sigma_convolution))
+            
             # The abm simulation is updated one step at the time, 
             # following the rules of the 'step' method
             
@@ -435,7 +436,7 @@ class simulation:
         else:
             print('Evacuation failed!'+10*' ')   
     
-    def gaussian_density(self, sigma, Nx, Ny):
+    def gaussian_density(self, sigma):
         """
         Compute a Gaussian convolution of the agents positions to give the density in each point of a grid underlying the room. 
 
@@ -458,7 +459,7 @@ class simulation:
         X,Y = np.meshgrid(np.linspace(0,self.room_length,self.Nx), 
                           np.linspace(0,self.room_height,self.Ny))
         
-        d = np.zeros((Ny,Nx))
+        d = np.zeros((self.Ny,self.Nx))
         count = 0
         
         for agent in self.agents:
