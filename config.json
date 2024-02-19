@@ -10,7 +10,7 @@
 "b_min": 0.2,
 "b_max": 0.25,
 "tau_a": 0.53,
-"eta": 0.15,
+"eta": 0.05,
 "eta_walls": 0.15,
 "repulsion_cutoff": 4,
 
