@@ -92,6 +92,7 @@ class simulation:
         self.repulsion_cutoff = var_config['repulsion_cutoff']
         self.v_max = var_config['v_max']
         
+        self.history = {}
         
         # We initialize the crowd, we will count the number of agents and create 
         # the different potentials given by the combinations of targets
@@ -327,7 +328,7 @@ class simulation:
         self.simu_step+=1
         
         if verbose:
-            print('t = {:.2f}s exit = {}/{}'.format(self.time,self.N - self.inside,self.N)+10*' ',end='\n')
+            print('t = {:.2f}s exit = {}/{}'.format(self.time,self.N - self.inside,self.N)+10*' ',end='\r') 
                 
     def evac_times(self,draw = False):
         """
@@ -355,7 +356,8 @@ class simulation:
         times = np.empty(self.N,dtype = float)
         for i, agent in enumerate(self.agents):
             times[i] = agent.time
-        if draw: 
+        if draw:
+            plt.figure(figsize = (self.room_length,self.room_height))
             xs,ys = self.initial_positions()
             plt.scatter(xs, ys, c=times)
             plt.xlim(0,self.room_length)
@@ -417,6 +419,8 @@ class simulation:
         while (self.inside > 0) & (self.time < self.T): 
             # The abm simulation is updated one step at the time, 
             # following the rules of the 'step' method
+            
+            self.write_history(self.time)
             
             self.step(self.dt,verbose = verbose)
             
@@ -566,3 +570,131 @@ class simulation:
             V[target_X*target_Y] = var_config['hjb_params']['target_potential']
         
         return V
+    
+    
+    def write_history(self,time):
+        
+        frame = []
+        
+        for agent in self.agents:
+            if agent.status:
+                frame.append([agent.position(),agent.velocity(),agent.target,agent.v_des])
+                
+        frame.append(self.gaussian_density(self.sigma_convolution, self.Nx, self.Ny))
+        
+        self.history[time] = frame
+        
+    def draw_history(self, mode = 'scatter'):
+        
+        
+    
+        if mode == 'scatter':
+    
+            for j,t in enumerate(self.history.keys()):
+                
+                if j%10==0 or j == len(self.history.keys()) - 1:
+                    
+                    plt.figure(figsize = (self.room_length,self.room_height))
+                    colors = sns.color_palette(n_colors=len(self.targets))
+                
+                    frame = self.history[t]
+                    
+                    # Where each agent is represented by a dot of radius 0.2m
+                
+                    for i in range(len(frame)): 
+                        
+                        pos_i = frame[i][0]
+                        vel_i = frame[i][1]
+                        target = frame[i][2]
+                        v_des = frame[i][3]
+                            
+                        direction = np.degrees(np.arctan2(vel_i[1],vel_i[0]))
+                    
+                        a_i = self.a_min + self.tau_a * np.linalg.norm(vel_i)
+                        b_i = self.b_max - (self.b_max - self.b_min)*np.minimum(np.linalg.norm(vel_i)/v_des,1)
+                            
+                        color_index = list(self.targets).index(target)
+                            
+                        E = Ellipse(pos_i, width = a_i , height= b_i, angle = direction,
+                                        color = colors[color_index])
+                            
+                        plt.gca().add_artist(E)
+                            
+                    plt.imshow(np.flip(self.V,axis = 0),extent=[0,self.room_length,0,self.room_height])
+                    plt.xlim([0,self.room_length])
+                    plt.ylim([0,self.room_height])
+                    title = 't = {:.2f}s exit = {}/{}'.format(t,self.N - len(frame),self.N)
+                    plt.title(title)
+                    handles = [Patch(color=colors[i],label = list(self.targets)[i]) for i in range(len(self.targets))]
+                    plt.legend(handles = handles, loc = 'upper right', frameon = False)
+                    plt.show()
+            
+            # Add empty room at the end
+            
+            self.draw()
+         
+        if mode == 'arrows':
+        
+        # Where each agent is represented by an arrow indicating its velocity 
+        
+            for j,t in enumerate(self.history.keys()):
+        
+                if j%10==0 or j == len(self.history.keys()) - 1:
+                    
+                    plt.figure(figsize = (self.room_length,self.room_height))
+                    colors = sns.color_palette(n_colors=len(self.targets))
+                
+                    frame = self.history[t]
+                
+                    scat_x = [frame[i][0][0] for i in range(len(frame))]
+                    scat_y = [frame[i][0][1] for i in range(len(frame))]
+                    scat_vx = [frame[i][1][0] for i in range(len(frame))]
+                    scat_vy = [frame[i][1][1] for i in range(len(frame))]
+                    
+                    plt.quiver(scat_x,scat_y,scat_vx, scat_vy,color = 'blue')
+                    plt.imshow(np.flip(self.V,axis = 0),extent=[0,self.room_length,0,self.room_height])
+                    plt.xlim([0,self.room_length])
+                    plt.ylim([0,self.room_height])
+                    title = 't = {:.2f}s exit = {}/{}'.format(t,self.N - len(frame),self.N)
+                    plt.title(title)
+                    plt.show()
+                    
+            # Add empty room at the end
+            
+            self.draw()
+        
+        if mode == 'density':
+            
+            # Where the gaussian convolution of the agents position is computed  
+            
+            for j,t in enumerate(self.history.keys()):
+        
+                if j%10==0 or j == len(self.history.keys()) - 1:
+                    
+                    plt.figure(figsize = (self.room_length,self.room_height))
+                    colors = sns.color_palette(n_colors=len(self.targets))
+                
+                    frame = self.history[t]
+            
+                    d = frame[-1]
+                    plt.imshow(np.flip(self.V/self.pot+ d,axis = 0) ,extent=[0,self.room_length,0,self.room_height])
+                    plt.xlim([0,self.room_length])
+                    plt.ylim([0,self.room_height])
+                    plt.colorbar()
+                    title = 't = {:.2f}s exit = {}/{}'.format(t,self.N - len(frame),self.N)
+                    plt.title(title)
+                    plt.show()
+            
+            # Add empty room at the end
+            
+            plt.figure(figsize = (self.room_length,self.room_height))
+            colors = sns.color_palette(n_colors=len(self.targets))
+            
+            plt.imshow(np.flip(self.V/self.pot,axis = 0) ,extent=[0,self.room_length,0,self.room_height])
+            plt.xlim([0,self.room_length])
+            plt.ylim([0,self.room_height])
+            plt.colorbar()
+            title = 't = {:.2f}s exit = {}/{}'.format(self.t,0,self.N)
+            plt.title(title)
+            plt.show()
+    
