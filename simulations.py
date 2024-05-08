@@ -122,7 +122,7 @@ class simulation:
               
             xs = np.random.uniform(box[0] - box[2]/2,box[0] + box[2]/2,loc_N)
             ys = np.random.uniform(box[1] - box[3]/2,box[1] + box[3]/2,loc_N)
-            v_des_all = np.random.uniform(0.5,self.v_max,loc_N)
+            v_des_all = np.random.normal(1.34,0.26,size = loc_N)
                 
             for i in range(loc_N):
                     
@@ -328,7 +328,7 @@ class simulation:
         self.simu_step+=1
         
         if verbose:
-            print('t = {:.2f}s exit = {}/{}'.format(self.time,self.N - self.inside,self.N)+10*' ',end='\r') 
+            print('t = {:.2f}s exit = {}/{}'.format(self.time,self.N - self.inside,self.N)+10*' ',end='\n') 
                 
     def evac_times(self,draw = False):
         """
@@ -646,10 +646,10 @@ class simulation:
                 
                     frame = self.history[t]
                 
-                    scat_x = [frame[i][0][0] for i in range(len(frame))]
-                    scat_y = [frame[i][0][1] for i in range(len(frame))]
-                    scat_vx = [frame[i][1][0] for i in range(len(frame))]
-                    scat_vy = [frame[i][1][1] for i in range(len(frame))]
+                    scat_x = [frame[i][0][0] for i in range(len(frame)-1)]
+                    scat_y = [frame[i][0][1] for i in range(len(frame)-1)]
+                    scat_vx = [frame[i][1][0] for i in range(len(frame)-1)]
+                    scat_vy = [frame[i][1][1] for i in range(len(frame)-1)]
                     
                     plt.quiver(scat_x,scat_y,scat_vx, scat_vy,color = 'blue')
                     plt.imshow(np.flip(self.V,axis = 0),extent=[0,self.room_length,0,self.room_height])
