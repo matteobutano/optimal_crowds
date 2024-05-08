@@ -601,7 +601,7 @@ class simulation:
                     
                     # Where each agent is represented by a dot of radius 0.2m
                 
-                    for i in range(len(frame)): 
+                    for i in range(len(frame)-1): 
                         
                         pos_i = frame[i][0]
                         vel_i = frame[i][1]
