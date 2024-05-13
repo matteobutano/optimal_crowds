@@ -103,11 +103,12 @@ class simulation:
         self.targets = {}
         self.Vs = {}
         self.V = np.zeros((self.Ny,self.Nx)) + 1
-    
+        
+        self.placeholder = np.zeros((self.Ny, self.Nx))
+        r_in = 0.2
+        
         for box in var_room['initial_boxes']:
-                  
             box = var_room['initial_boxes'][box]
-            
             targets = box[5:]
             key = ' or '.join(targets)
             
@@ -117,11 +118,23 @@ class simulation:
             self.V*= V
            
             loc_N = int(box[4] * box[2] * box[3])
-            
-            N += loc_N
-              
-            xs = np.random.uniform(box[0] - box[2]/2,box[0] + box[2]/2,loc_N)
-            ys = np.random.uniform(box[1] - box[3]/2,box[1] + box[3]/2,loc_N)
+            N+=loc_N
+            xs = np.empty(loc_N)
+            ys = np.empty(loc_N)
+            placed = 0
+            trials = 0
+            while placed < loc_N:
+                trials +=1
+                x_in= np.random.uniform(box[0] - box[2]/2,box[0] + box[2]/2,1)
+                y_in = np.random.uniform(box[1] - box[3]/2,box[1] + box[3]/2,1)
+                if 1 in self.placeholder[np.sqrt((self.X_opt- x_in)**2 + (self.Y_opt - y_in)**2) < r_in]: 
+                    continue
+                else: 
+                    self.placeholder[np.sqrt((self.X_opt - x_in)**2 + (self.Y_opt - y_in)**2) < r_in] = 1
+                    xs[placed] = x_in
+                    ys[placed] = y_in
+                    placed+=1
+                    
             v_des_all = np.random.normal(1.34,0.26,size = loc_N)
                 
             for i in range(loc_N):
