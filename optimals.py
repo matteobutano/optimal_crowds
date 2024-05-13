@@ -66,6 +66,7 @@ class optimals:
         self.sigma = var_config['hjb_params']['sigma']
         self.mu = var_config['hjb_params']['mu']
         self.pot = var_config['hjb_params']['wall_potential']
+        self.pot_target = var_config['hjb_params']['target_potential']
        
         # Time discretization 
         
@@ -85,6 +86,8 @@ class optimals:
         # Create potential V
         
         self.V = V
+        self.V[self.V<0] = self.pot
+        self.V[self.V>0] = self.pot_target
             
         self.phi_T = self.phi_T.reshape(self.Nx*self.Ny)
         

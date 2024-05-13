@@ -103,8 +103,7 @@ class simulation:
         self.targets = {}
         self.Vs = {}
         self.V = np.zeros((self.Ny,self.Nx)) + 1
-        
-        self.placeholder = np.zeros((self.Ny, self.Nx))
+        self.place_ped = np.zeros((self.Ny, self.Nx))
         r_in = 0.2
         
         for box in var_room['initial_boxes']:
@@ -112,11 +111,10 @@ class simulation:
             targets = box[5:]
             key = ' or '.join(targets)
             
-            V = self.create_potential(var_room,var_config,targets)
+            V = self.create_potential(var_room, targets)
             self.Vs[key] = V
             self.targets[key] = optimals.optimals(room,V,T,key)
-            self.V*= V
-           
+            self.V+= V
             loc_N = int(box[4] * box[2] * box[3])
             N+=loc_N
             xs = np.empty(loc_N)
@@ -127,10 +125,10 @@ class simulation:
                 trials +=1
                 x_in= np.random.uniform(box[0] - box[2]/2,box[0] + box[2]/2,1)
                 y_in = np.random.uniform(box[1] - box[3]/2,box[1] + box[3]/2,1)
-                if 1 in self.placeholder[np.sqrt((self.X_opt- x_in)**2 + (self.Y_opt - y_in)**2) < r_in]: 
+                if 1 in self.place_ped[np.sqrt((self.X_opt- x_in)**2 + (self.Y_opt - y_in)**2) < r_in]: 
                     continue
                 else: 
-                    self.placeholder[np.sqrt((self.X_opt - x_in)**2 + (self.Y_opt - y_in)**2) < r_in] = 1
+                    self.place_ped[np.sqrt((self.X_opt - x_in)**2 + (self.Y_opt - y_in)**2) < r_in] = 1
                     xs[placed] = x_in
                     ys[placed] = y_in
                     placed+=1
@@ -152,11 +150,7 @@ class simulation:
                                                    v_des_all[i],self.a_min,self.tau_a,
                                                    self.b_min,self.b_max,self.eta,self.eta_walls))
             
-        
-        l = len(var_room['initial_boxes'])
-        
-        self.V = self.pot*(abs(self.V) == abs(self.pot)**l) + (abs(self.V) != abs(self.pot)**l)*(self.V !=0)
-        
+        self.V[self.V > np.min(self.V)] = 0
         self.N = N
         self.inside = self.N
         self.agents = np.array(self.agents, dtype = object)
@@ -519,7 +513,7 @@ class simulation:
         plt.legend(handles = handles, loc = 'upper right', frameon = False)
         plt.show()
         
-    def create_potential(self,var_room,var_config,targets):
+    def create_potential(self, var_room, targets):
         """
         Build the grid representing the room's obstacles and walls, depending on the target, to be fed to the HJB equation
 
@@ -539,9 +533,7 @@ class simulation:
 
         """
         
-        pot = self.pot
-        V = np.zeros((self.Ny,self.Nx)) + pot
-        V[1:-1,1:-1] = 0
+        V = np.zeros((self.Ny,self.Nx)) 
         
         for walls in var_room['walls']:
             wall = var_room['walls'][walls]
@@ -550,7 +542,7 @@ class simulation:
             mask_Y = abs(self.Y_opt-wall[1]) < wall[3]/2          
             
             V_temp = np.zeros((self.Ny,self.Nx))
-            V_temp[mask_X*mask_Y] = pot
+            V_temp[mask_X*mask_Y] = -1
             
             V += V_temp
          
@@ -560,27 +552,26 @@ class simulation:
             hole_X = abs(self.X_opt-hole[0]) < hole[2]/2
             hole_Y = abs(self.Y_opt-hole[1]) < hole[3]/2
             
-            V[hole_X*hole_Y] = 0   
+            V[hole_X*hole_Y] = 0  
         
         for cyls in var_room['cylinders']:
             cyl = var_room['cylinders'][cyls]
             
             V_temp =  np.zeros((self.Ny,self.Nx))
-            V_temp[np.sqrt((self.X_opt-cyl[0])**2 + (self.Y_opt-cyl[1])**2) < cyl[2]] = pot
+            V_temp[np.sqrt((self.X_opt-cyl[0])**2 + (self.Y_opt-cyl[1])**2) < cyl[2]] = -1
             
             V+= V_temp
         
-        V = pot *(V <= pot)  
-        V[:,0] = pot
-        V[:,-1] = pot
-        V[0,:] = pot
-        V[-1,:] = pot
+        V[:,0] = -1
+        V[:,-1] = -1
+        V[0,:] = -1
+        V[-1,:] = -1
         
         for target in targets:
             target = var_room['targets'][target]
             target_X = abs(self.X_opt - target[0]) < target[2]/2
             target_Y = abs(self.Y_opt - target[1]) < target[3]/2
-            V[target_X*target_Y] = var_config['hjb_params']['target_potential']
+            V[target_X*target_Y] = 1
         
         return V
     
