@@ -13,6 +13,7 @@
 "eta": 0.05,
 "eta_walls": 0.15,
 "repulsion_cutoff": 4,
+"recompute_frequency": 50,
 
 "hjb_params":{
     "sigma": 0.2,

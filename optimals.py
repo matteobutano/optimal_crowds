@@ -68,7 +68,7 @@ class optimals:
         self.pot = var_config['hjb_params']['wall_potential']
         self.pot_target = var_config['hjb_params']['target_potential']
         self.g = var_config['hjb_params']['g']
-       
+   
         # Time discretization 
         
         self.dt = var_config['dt']

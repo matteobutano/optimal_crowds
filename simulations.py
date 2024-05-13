@@ -17,7 +17,7 @@ warnings.filterwarnings("ignore")
 
 class simulation:
 
-    def __init__(self, room, T):
+    def __init__(self, room, T, recompute = False):
         """
         Initialize the room and the agents
 
@@ -33,6 +33,8 @@ class simulation:
         None.
 
         """
+        
+        self.recompute = recompute
 
         # The config.json contains the parameters of the abm agents and
         # of the HJB equation used to guide their motion
@@ -91,6 +93,8 @@ class simulation:
         self.eta_walls = var_config['eta_walls']
         self.repulsion_cutoff = var_config['repulsion_cutoff']
         self.v_max = var_config['v_max']
+        
+        self.recompute_step = var_config['recompute_frequency'] 
         
         self.history = {}
         
@@ -416,17 +420,20 @@ class simulation:
         None.
 
         """
+        print(f"Computing trajectories at time {self.time}")
+        for target in self.targets:
+            self.targets[target].compute_optimal_velocity(self.time,self.gaussian_density(self.sigma_convolution)*(self.simu_step > 0))
         
         while (self.inside > 0) & (self.time < self.T): 
             # The abm simulation is updated one step at the time, 
             # following the rules of the 'step' method
             
             # We find the optimal trajectoried every n steps, and providing the information about the density 
-            if self.simu_step % 100 == 0:
+            if self.recompute and (self.simu_step % self.recompute_step == 0) and self.simu_step > 0:
                 print(f"Computing trajectories at time {self.time}")
                 for target in self.targets:
                     self.targets[target].compute_optimal_velocity(self.time,self.gaussian_density(self.sigma_convolution)*(self.simu_step > 0))
-            
+
             self.write_history(self.time)
             self.step(self.dt,verbose = verbose)
             
