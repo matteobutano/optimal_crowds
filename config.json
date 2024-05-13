@@ -18,7 +18,8 @@
     "sigma": 0.2,
     "mu": 5,
     "wall_potential": -100,
-    "target_potential": 1
+    "target_potential": 1,
+    "g": -0.005
 }
 }
 

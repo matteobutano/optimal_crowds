@@ -416,25 +416,22 @@ class simulation:
         None.
 
         """
-
-        # Before starting the abm simulation, we compute the optimal velocities 
-        # by solving the HJB representing obstacles and targets.
         
-        for target in self.targets:
-            self.targets[target].compute_optimal_velocity()
-            
         while (self.inside > 0) & (self.time < self.T): 
             # The abm simulation is updated one step at the time, 
             # following the rules of the 'step' method
             
-            self.write_history(self.time)
+            # We find the optimal trajectoried every n steps, and providing the information about the density 
+            if self.simu_step % 100 == 0:
+                print(f"Computing trajectories at time {self.time}")
+                for target in self.targets:
+                    self.targets[target].compute_optimal_velocity(self.time,self.gaussian_density(self.sigma_convolution)*(self.simu_step > 0))
             
+            self.write_history(self.time)
             self.step(self.dt,verbose = verbose)
             
             # Draw current state of the simulation 
-            
-            # and (int(self.time*100%10) == 0)
-            
+              
             if draw and (self.simu_step % 10) == 0 :
                 self.draw(mode)
                 plt.show()
@@ -446,7 +443,7 @@ class simulation:
         else:
             print('Evacuation failed!'+10*' ')   
     
-    def gaussian_density(self, sigma, Nx, Ny):
+    def gaussian_density(self, sigma):
         """
         Compute a Gaussian convolution of the agents positions to give the density in each point of a grid underlying the room. 
 
@@ -454,11 +451,7 @@ class simulation:
         ----------
         sigma : float
             The std deviation of the gaussians used to compute the convolution.
-        Nx : int
-            Number of points along the x-axis of the grid.
-        Ny : TYPE
-            Number of points along the y-axis of the grid.
-
+        
         Returns
         -------
         d : numpy.array
@@ -469,7 +462,7 @@ class simulation:
         X,Y = np.meshgrid(np.linspace(0,self.room_length,self.Nx), 
                           np.linspace(0,self.room_height,self.Ny))
         
-        d = np.zeros((Ny,Nx))
+        d = np.zeros((self.Ny,self.Nx))
         count = 0
         
         for agent in self.agents:
@@ -584,7 +577,7 @@ class simulation:
             if agent.status:
                 frame.append([agent.position(),agent.velocity(),agent.target,agent.v_des])
                 
-        frame.append(self.gaussian_density(self.sigma_convolution, self.Nx, self.Ny))
+        frame.append(self.gaussian_density(self.sigma_convolution))
         
         self.history[time] = frame
         

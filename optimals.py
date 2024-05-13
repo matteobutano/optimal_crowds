@@ -67,6 +67,7 @@ class optimals:
         self.mu = var_config['hjb_params']['mu']
         self.pot = var_config['hjb_params']['wall_potential']
         self.pot_target = var_config['hjb_params']['target_potential']
+        self.g = var_config['hjb_params']['g']
        
         # Time discretization 
         
@@ -120,7 +121,7 @@ class optimals:
     # over the simulation room using the potential V to represent the walls
     # and the doors to represent target doors. 
     
-    def compute_optimal_velocity(self):
+    def compute_optimal_velocity(self, t, m):
         '''
         Solve the HJB equation and compute the optimal velocities.
 
@@ -134,9 +135,13 @@ class optimals:
         ny = self.Ny
         dx = self.dx
         dy = self.dy
+        
+        self.t = t
+        self.nt_opt = round((self.T - self.t)/self.dt)
+        
         nt = self.nt_opt
      
-        def hjb(t,phi):
+        def hjb(t, phi, m):
         
             phi_temp = np.empty((ny+2,nx+2))
             phi_temp[1:-1,1:-1] = phi.reshape(ny,nx).copy()
@@ -152,7 +157,7 @@ class optimals:
              
             
             phi_temp[1:-1,1:-1] = -0.5*self.sigma**2*lap -\
-                ((self.V)*phi_temp[1:-1,1:-1])/(self.mu*self.sigma**2)
+                ((self.V + self.g*m)*phi_temp[1:-1,1:-1])/(self.mu*self.sigma**2)
                 
             phi_temp[1:-1,1:-1][self.V<0] = 0
          
@@ -188,7 +193,7 @@ class optimals:
         t_span = (self.T,0)
         t_events = np.linspace(self.T,0,self.nt_opt)
 
-        sol = solve_ivp(hjb, t_span, phi_T, method ='RK45',t_eval = t_events)
+        sol = solve_ivp(hjb, t_span, phi_T, method ='RK45',t_eval = t_events, args = (m,))
         
         # We create the floor field prescribing agents velocity 
         
