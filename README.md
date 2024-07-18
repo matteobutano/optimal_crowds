@@ -29,10 +29,10 @@ Here you can find a selection of rooms already configured:
 ## START YOUR FIRST SIMULATION ▶️
 
 In the directory where you cloned the 'optimal_control' repository, create a python script 'run.py' with instructions:
-1. **'from optimal_crowds import simulations'**, to import the simulation module 
+1. **'from optimal_crowds import simulations'**, to import the simulation module. 
 2. **'simu = simulations.simulation('room', T, recompute)'**, to create the simulation room , where: *room*, must be a string with the name without extension of the room's configuration file saved in you 'rooms' folder; $T$ must be a float determining the max time in seconds you allow agents to exit the simulation room. If $T$ is too small, agents won't move from their initial positions; in that case, try increasing $T$. On the other hand, if $T$ is too large, permormance could be impaired. Recompute is boolean, and active the periodic computation of the optimal strategy with frequency given in simulation step in the config file. 
-4. **'simu.run(draw, verbose)'**, to execute the simulation , where: *draw* must be boolean. If True the simulation room and the agents are plotted at each time step; *verbose* must be a boolean. If True the simulation time in seconds and the number of exited agents are printed at each time step
-5. **'simu.draw_final_trajectories()'** to finally, plot the actual trajectory each agent followed to exit the simulation room using 
+4. **'simu.run(draw, verbose)'**, to execute the simulation , where: *draw* must be boolean. If True the simulation room and the agents are plotted at each time step; *verbose* must be a boolean. If True the simulation time in seconds and the number of exited agents are printed at each time step. 
+5. **'simu.draw_history()'** to finally, plot the actual trajectory each agent followed to exit the simulation room.  
 
 ## CONTRIBUTE 🏁
 
